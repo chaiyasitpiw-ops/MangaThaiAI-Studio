@@ -1,0 +1,40 @@
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data and caches
+data/inputs/*
+!data/inputs/.gitkeep
+data/outputs/*
+!data/outputs/.gitkeep
+data/cache/*
+!data/cache/.gitkeep
+cache/
+*.log
+
+# AI Model weights & checkpoints
+models/
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+*.gguf
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local

@@ -1,0 +1,62 @@
+# =====================================================================
+# MangaThaiAI-Studio: Configuration File
+# =====================================================================
+
+system:
+  role: "control_center" # 'control_center' on laptop, 'remote_worker' on Gaming PC
+  debug: true
+
+paths:
+  base_dir: "D:/code/MangaThaiAI-Studio"
+  inputs_dir: "D:/code/MangaThaiAI-Studio/data/inputs"
+  outputs_dir: "D:/code/MangaThaiAI-Studio/data/outputs"
+  cache_dir: "D:/code/MangaThaiAI-Studio/data/cache"
+  hf_home: "D:/hf_cache"
+  torch_home: "D:/torch_cache"
+
+network:
+  # Laptop Control Center Web UI / API Gateway
+  control_center:
+    host: "0.0.0.0"
+    port: 8000
+    lan_ip: "192.168.1.104"
+  
+  # Gaming PC Remote AI Worker (Update host IP once Gaming PC audit is complete)
+  remote_worker:
+    host: "192.168.1.50" # Default placeholder, will update to Gaming PC LAN IP
+    port: 8888
+    timeout_seconds: 300
+    healthcheck_endpoint: "/api/health"
+    inference_endpoint: "/api/v1/process-page"
+
+pipeline:
+  text_detection:
+    engine: "yolov8_manga" # or 'craft'
+    conf_threshold: 0.4
+  
+  ocr:
+    engine: "manga_ocr" # High accuracy on Japanese vertical/horizontal manga text
+    device: "cuda"
+  
+  translation:
+    engine: "llm_remote" # Running on Gaming PC worker
+    model_name: "Qwen/Qwen2.5-7B-Instruct" # Or local quantized GGUF / AWQ
+    system_prompt: |
+      คุณเป็นนักแปลการ์ตูนญี่ปุ่น (มังงะ) มืออาชีพ
+      จงแปลข้อความภาษาญี่ปุ่นต่อไปนี้เป็นภาษาไทยที่เป็นธรรมชาติ
+      ใช้สำนวนและบริบทแบบมังงะไทยที่อ่านสนุก สละสลวย ไม่แปลแบบทับศัพท์แข็งกระด้าง
+      รักษาอารมณ์ความรู้สึก คำสบถ หรือคำอุทานของตัวละครให้ตรงตามต้นฉบับ
+    temperature: 0.6
+  
+  inpainting:
+    engine: "lama_cleaner" # Fast and high-quality background completion
+    device: "cuda"
+  
+  typesetting:
+    default_font: "assets/fonts/MangaThai-Regular.ttf"
+    fallback_font: "tahoma.ttf"
+    text_color: [0, 0, 0] # Black
+    stroke_color: [255, 255, 255] # White border
+    stroke_width: 2
+    direction: "horizontal" # Modern Thai reading format
+    line_spacing: 1.15
