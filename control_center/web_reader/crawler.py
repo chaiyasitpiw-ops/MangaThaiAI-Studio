@@ -69,13 +69,18 @@ class WebMangaCrawler:
                 if abs_url in seen_urls:
                     continue
 
-                # Filter out obvious small icons, avatars, tracking pixels, ads
+                # Filter out obvious small icons, avatars, tracking pixels, ads, and series covers
                 url_lower = abs_url.lower()
-                if any(x in url_lower for x in ["avatar", "icon", "logo", "banner", "ad_", "pixel", "tracker", "facebook", "twitter"]):
+                if any(x in url_lower for x in ["avatar", "icon", "logo", "banner", "ad_", "pixel", "tracker", "facebook", "twitter", "/covers/"]):
                     continue
 
                 seen_urls.add(abs_url)
                 found_images.append(abs_url)
+
+            # If images with chapter path exist, prioritize them to exclude unrelated thumbnails
+            chapter_images = [u for u in found_images if "chapter" in u.lower()]
+            if len(chapter_images) >= 3:
+                found_images = chapter_images
 
             return {
                 "source_url": page_url,

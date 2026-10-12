@@ -301,11 +301,18 @@ async def dashboard():
                         วางลิงก์หน้าเว็บมังงะ (Manga Chapter URL) หรือลิงก์รูปภาพมังงะ ระบบจะดึงหน้ามังงะมาแสดงและแปลภาษาไทยสดทีละหน้าหรือทุกหน้าอัตโนมัติ
                     </p>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="webUrlInput" class="input-text" style="width:100%;" placeholder="ตัวอย่าง: https://example.com/manga-chapter-1 หรือ ลิงก์รูปภาพมังงะ .png / .jpg">
+                        <input type="text" id="webUrlInput" class="input-text" style="width:100%;" placeholder="ตัวอย่าง: https://asurascans.com/comics/overgeared-1bb35e56/chapter/343">
                         <button class="btn btn-success" style="white-space:nowrap;" onclick="fetchAndReadWebManga()">🚀 ดึงข้อมูล & เปิดอ่าน</button>
                     </div>
-                    <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">
-                        💡 ตัวอย่างสำหรับทดสอบด่วน: <a href="javascript:void(0)" style="color:#818cf8;" onclick="loadTestUrl()">คลิกที่นี่เพื่อใส่ URL ตัวอย่างมังงะทดสอบ</a>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#a5b4fc; font-weight:600;">
+                            <input type="checkbox" id="autoTranslateCheck" checked> ⚡ แปลเป็นภาษาไทยอัตโนมัติทันทีที่เปิดอ่าน (Auto-Translate)
+                        </label>
+                        <div style="font-size:12px; color:var(--text-muted);">
+                            💡 คลิกเพื่อทดสอบด่วน: 
+                            <a href="javascript:void(0)" style="color:#38bdf8; font-weight:600;" onclick="loadAsuraUrl()">Overgeared ตอน 343 (Asura Scans)</a> | 
+                            <a href="javascript:void(0)" style="color:#818cf8;" onclick="loadTestUrl()">มังงะญี่ปุ่นตัวอย่าง</a>
+                        </div>
                     </div>
                 </div>
 
@@ -314,7 +321,7 @@ async def dashboard():
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                         <h3 id="mangaTitleHeader" style="margin:0; font-size:16px; color:#a5b4fc;">รายการหน้ามังงะ</h3>
                         <div>
-                            <button class="btn btn-success" onclick="translateAllWebPages()">⚡ แปลทุกหน้าในตอนนี้อัตโนมัติ (Translate All)</button>
+                            <button class="btn btn-success" onclick="translateAllWebPages()">⚡ สั่งแปลทุกหน้าซ้ำอีกครั้ง (Translate All)</button>
                         </div>
                     </div>
                     <div id="pagesContainer"></div>
@@ -511,8 +518,14 @@ async def dashboard():
                 }
             }
 
+            function loadAsuraUrl() {
+                document.getElementById('webUrlInput').value = 'https://asurascans.com/comics/overgeared-1bb35e56/chapter/343';
+                fetchAndReadWebManga();
+            }
+
             function loadTestUrl() {
                 document.getElementById('webUrlInput').value = 'http://localhost:8000/static/sample_manga.png';
+                fetchAndReadWebManga();
             }
 
             async function fetchAndReadWebManga() {
@@ -553,7 +566,7 @@ async def dashboard():
                                 <span style="font-weight:600; font-size:14px; color:#cbd5e1;">หน้า ${idx + 1}</span>
                                 <div style="display:flex; gap:8px;">
                                     <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="toggleOriginalView(${idx})">👁 สลับดูต้นฉบับ</button>
-                                    <button id="btnTranslate_${idx}" class="btn btn-success" style="font-size:12px; padding:6px 12px;" onclick="translateSingleWebPage(${idx}, '${escapeHtml(imgUrl)}')">⚡ แปลหน้านี้ทันที</button>
+                                    <button id="btnTranslate_${idx}" class="btn btn-success" style="font-size:12px; padding:6px 12px;" onclick="translateSingleWebPage(${idx}, '${escapeHtml(imgUrl)}')">⚡ แปลหน้านี้</button>
                                 </div>
                             </div>
                             <img id="mangaImg_${idx}" src="${escapeHtml(imgUrl)}" data-original="${escapeHtml(imgUrl)}" alt="Page ${idx + 1}">
@@ -561,6 +574,11 @@ async def dashboard():
                         `;
                         container.appendChild(card);
                     });
+
+                    // Auto translate all if checked
+                    if (document.getElementById('autoTranslateCheck').checked) {
+                        translateAllWebPages();
+                    }
                 } catch(e) {
                     container.innerHTML = '<p style="color:#f87171;">เกิดข้อผิดพลาดในการดึงข้อมูล: ' + e + '</p>';
                 }
@@ -574,7 +592,7 @@ async def dashboard():
 
                 btn.disabled = true;
                 btn.innerText = '⏳ กำลังแปล...';
-                statusEl.innerHTML = '<span style="color:#fbbf24;">กำลังลบตัวหนังสือและลงภาษาไทย (โทน: ' + tone + ')...</span>';
+                statusEl.innerHTML = '<span style="color:#fbbf24;">กำลังอ่านตัวหนังสือ (OCR) และแปลไทย...</span>';
 
                 try {
                     const res = await fetch('/api/translate-image-url', {
@@ -600,9 +618,13 @@ async def dashboard():
             }
 
             async function translateAllWebPages() {
+                const titleHeader = document.getElementById('mangaTitleHeader');
+                const origTitle = titleHeader.innerText;
                 for (let i = 0; i < fetchedWebImages.length; i++) {
+                    titleHeader.innerText = `📖 กำลังแปลภาษาไทยหน้า ${i + 1}/${fetchedWebImages.length}... (โปรดรอสักครู่)`;
                     await translateSingleWebPage(i, fetchedWebImages[i]);
                 }
+                titleHeader.innerText = origTitle + ' [✓ แปลเสร็จสมบูรณ์แล้ว]';
             }
 
             function toggleOriginalView(idx) {

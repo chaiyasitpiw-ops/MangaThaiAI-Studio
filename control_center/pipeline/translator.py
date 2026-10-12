@@ -129,6 +129,50 @@ class MangaNaturalTranslator:
             (r"\bไปสู่ความตาย\b", "ไปตายซะ!"),
         ]
 
+    def polish_thai_dialogue(self, thai_text: str, tone: str = MangaTone.SHONEN) -> str:
+        """Polishes raw Thai translation with authentic manga tone and removes robotic artifacts."""
+        out = thai_text.strip()
+        if not out:
+            return ""
+        for pattern, replacement in self.stiff_thai_cleaners:
+            out = re.sub(pattern, replacement, out)
+        out = self._apply_tone(out, tone)
+        return out
+
+    def lookup_slang(self, source_text: str, source_lang: str = "auto") -> Optional[str]:
+        """Looks up exact or partial matches in the manga slang dictionary. Returns None if not found."""
+        cleaned_src = source_text.strip()
+        if not cleaned_src:
+            return None
+
+        lang = source_lang.lower()
+        if lang == "auto":
+            if re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]", cleaned_src):
+                lang = "jp" if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", cleaned_src) else "cn"
+            elif re.search(r"[\uac00-\ud7af]", cleaned_src):
+                lang = "kr"
+            else:
+                lang = "en"
+
+        if lang == "jp":
+            for jp_key, th_val in self.jp_slang_map.items():
+                if jp_key in cleaned_src:
+                    return th_val
+        elif lang == "en":
+            cleaned_lower = cleaned_src.lower()
+            for en_key, th_val in self.en_slang_map.items():
+                if en_key in cleaned_lower:
+                    return th_val
+        elif lang == "kr":
+            for kr_key, th_val in self.kr_slang_map.items():
+                if kr_key in cleaned_src:
+                    return th_val
+        elif lang == "cn":
+            for cn_key, th_val in self.cn_slang_map.items():
+                if cn_key in cleaned_src:
+                    return th_val
+        return None
+
     def translate_and_polish(
         self,
         source_text: str,
