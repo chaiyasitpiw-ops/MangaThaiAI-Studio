@@ -70,8 +70,42 @@ class BubbleDetector:
                     if 0.25 <= aspect <= 4.0:
                         bboxes.append([y, x, y + bh, x + bw])
 
+        # Deduplicate and suppress overlapping / nested boxes
+        bboxes = self._suppress_overlaps(bboxes)
+
         # Sort bboxes in manga reading order: Top-to-Bottom, Right-to-Left
         # Prioritize rightmost first, then vertical
-        bboxes.sort(key=lambda b: (b[0] // (h // 4), -b[3]))
+        bboxes.sort(key=lambda b: (b[0] // max(1, h // 4), -b[3]))
 
         return bboxes
+
+    def _suppress_overlaps(self, bboxes: List[List[int]]) -> List[List[int]]:
+        """Suppresses redundant inner or highly overlapping bounding boxes."""
+        if not bboxes:
+            return []
+
+        sorted_boxes = sorted(bboxes, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]), reverse=True)
+        kept = []
+
+        for b in sorted_boxes:
+            y1, x1, y2, x2 = b
+            b_area = (y2 - y1) * (x2 - x1)
+            is_contained = False
+
+            for kb in kept:
+                ky1, kx1, ky2, kx2 = kb
+                iy1 = max(y1, ky1)
+                ix1 = max(x1, kx1)
+                iy2 = min(y2, ky2)
+                ix2 = min(x2, kx2)
+
+                if iy2 > iy1 and ix2 > ix1:
+                    inter_area = (iy2 - iy1) * (ix2 - ix1)
+                    if inter_area / float(b_area) > 0.65:
+                        is_contained = True
+                        break
+
+            if not is_contained:
+                kept.append(b)
+
+        return kept

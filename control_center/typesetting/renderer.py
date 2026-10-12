@@ -20,29 +20,36 @@ class ThaiMangaTypesetter:
         self.font_path = font_path
 
     def wrap_thai_text(self, text: str, max_width: int, font: ImageFont.FreeTypeFont, draw: ImageDraw.ImageDraw) -> List[str]:
-        """Wraps Thai text taking into account Thai word segmentation."""
-        if HAS_PYTHAINLP:
-            words = word_tokenize(text, engine="newmm")
-        else:
-            words = text.split() if " " in text else list(text)
+        """Wraps Thai text respecting explicit newlines and Thai word boundaries."""
+        paragraphs = text.split("\n")
+        all_lines = []
 
-        lines = []
-        current_line = ""
+        for para in paragraphs:
+            para = para.strip()
+            if not para:
+                continue
 
-        for word in words:
-            test_line = current_line + word
-            bbox = draw.textbbox((0, 0), test_line, font=font)
-            line_width = bbox[2] - bbox[0]
-            if line_width <= max_width:
-                current_line = test_line
+            if HAS_PYTHAINLP:
+                words = word_tokenize(para, engine="newmm")
             else:
-                if current_line:
-                    lines.append(current_line)
-                current_line = word
+                words = para.split() if " " in para else list(para)
 
-        if current_line:
-            lines.append(current_line)
-        return lines or [text]
+            current_line = ""
+            for word in words:
+                test_line = current_line + word
+                bbox = draw.textbbox((0, 0), test_line, font=font)
+                line_width = bbox[2] - bbox[0]
+                if line_width <= max_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        all_lines.append(current_line)
+                    current_line = word
+
+            if current_line:
+                all_lines.append(current_line)
+
+        return all_lines or [text]
 
     def render_text_in_bubble(
         self,
@@ -53,20 +60,20 @@ class ThaiMangaTypesetter:
         stroke_color: Tuple[int, int, int] = (255, 255, 255),
         stroke_width: int = 2,
     ) -> Image.Image:
-        """Auto-scales and draws Thai text inside the speech bubble bounding box."""
+        """Auto-scales and draws Thai text inside speech bubble with ellipse margin safety."""
         draw = ImageDraw.Draw(image)
         ymin, xmin, ymax, xmax = bbox
         bubble_width = max(10, xmax - xmin)
         bubble_height = max(10, ymax - ymin)
 
-        # Padding
-        pad_x = int(bubble_width * 0.1)
-        pad_y = int(bubble_height * 0.1)
-        target_w = bubble_width - (pad_x * 2)
-        target_h = bubble_height - (pad_y * 2)
+        # Elliptical bubble safety padding (~16% on each side)
+        pad_x = max(6, int(bubble_width * 0.16))
+        pad_y = max(6, int(bubble_height * 0.16))
+        target_w = max(20, bubble_width - (pad_x * 2))
+        target_h = max(20, bubble_height - (pad_y * 2))
 
-        # Binary search or decrement font size to fit inside target area
-        font_size = 28
+        # Binary search / decrement font size to fit inside target area
+        font_size = 32
         min_font_size = 12
         fitted_lines = [text]
         best_font = None
@@ -78,7 +85,8 @@ class ThaiMangaTypesetter:
                 font = ImageFont.load_default()
 
             lines = self.wrap_thai_text(text, target_w, font, draw)
-            total_text_h = len(lines) * int(font_size * 1.25)
+            # 1.38 line height gives comfortable clearance for Thai upper tone marks and lower vowels
+            total_text_h = len(lines) * int(font_size * 1.38)
 
             if total_text_h <= target_h:
                 fitted_lines = lines
@@ -93,8 +101,8 @@ class ThaiMangaTypesetter:
                 best_font = ImageFont.load_default()
             fitted_lines = self.wrap_thai_text(text, target_w, best_font, draw)
 
-        # Compute vertical start position (center aligned)
-        line_height = int(font_size * 1.25)
+        # Compute vertical start position (vertically centered)
+        line_height = int(font_size * 1.38)
         total_block_h = len(fitted_lines) * line_height
         curr_y = ymin + pad_y + max(0, (target_h - total_block_h) // 2)
 

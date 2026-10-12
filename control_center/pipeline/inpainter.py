@@ -49,10 +49,15 @@ class MangaTextInpainter:
             _, text_mask = cv2.threshold(crop_gray, dynamic_thresh, 255, cv2.THRESH_BINARY_INV)
 
             # Avoid masking the bubble outer border if bubble touches the box edges
-            # Erode border pixels
-            border_pad = max(2, min(5, (xmax - xmin) // 20))
+            bh, bw = crop_gray.shape[:2]
+            pad_y = max(1, min(6, bh // 10))
+            pad_x = max(1, min(6, bw // 10))
+
             padded_mask = np.zeros_like(text_mask)
-            padded_mask[border_pad:-border_pad, border_pad:-border_pad] = text_mask[border_pad:-border_pad, border_pad:-border_pad]
+            if bh > pad_y * 2 and bw > pad_x * 2:
+                padded_mask[pad_y:-pad_y, pad_x:-pad_x] = text_mask[pad_y:-pad_y, pad_x:-pad_x]
+            else:
+                padded_mask = text_mask
 
             # Dilate text mask slightly (1-2 px) so edges blend seamlessly
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
