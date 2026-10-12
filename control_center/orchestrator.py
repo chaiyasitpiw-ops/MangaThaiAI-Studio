@@ -52,13 +52,14 @@ class MangaOrchestrator:
                     return {"status": "online", "worker_url": self.worker_base_url, "details": data}
                 else:
                     return {"status": "unhealthy", "code": res.status_code, "worker_url": self.worker_base_url}
-        except httpx.ConnectError:
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
             return {
                 "status": "offline",
-                "error": f"Cannot connect to Gaming PC Worker at {self.worker_base_url}. Make sure worker service is running and LAN firewall allows port {self.worker_port}.",
+                "error": f"Cannot reach Gaming PC Worker at {self.worker_base_url} ({type(e).__name__}). Make sure worker service is running and LAN firewall allows port {self.worker_port}.",
+                "worker_url": self.worker_base_url,
             }
         except Exception as e:
-            return {"status": "error", "error": str(e), "worker_url": self.worker_base_url}
+            return {"status": "error", "error": f"{type(e).__name__}: {str(e)}", "worker_url": self.worker_base_url}
 
     async def submit_page_for_processing(self, image_path: Path) -> Dict[str, Any]:
         """Submits a single manga page image to Gaming PC Worker for OCR, Inpainting, and Translation."""
