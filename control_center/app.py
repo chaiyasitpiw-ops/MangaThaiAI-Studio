@@ -4,8 +4,9 @@ Features:
 - Live Zero-Training Manga Translation Demo
 - Real-Time Web Manga Reader (Enter URL to read and translate live)
 - Universal Browser Bookmarklet (Live translation overlay on ANY external manga website)
+- Manga-Adaptive Natural Dialogue Engine (Shonen, Shojo, Seinen, Comedy)
+- Natural Dialogue vs Stiff Machine Translation Benchmark Showcase
 - Side-by-Side Visual Comparison & Live Bubble Editor
-- CORS-enabled API for external browser interactions
 """
 
 import base64
@@ -27,6 +28,7 @@ from PIL import Image
 
 from control_center.orchestrator import MangaOrchestrator
 from control_center.pipeline.pipeline import ZeroTrainingMangaPipeline
+from control_center.pipeline.translator import manga_translator, MangaTone
 from control_center.web_reader.crawler import WebMangaCrawler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -85,6 +87,7 @@ async def dashboard():
                 --primary: #6366f1;
                 --primary-hover: #4f46e5;
                 --success: #10b981;
+                --danger: #ef4444;
                 --bg: #090d16;
                 --card: #131c2e;
                 --card-border: #1e293b;
@@ -107,6 +110,8 @@ async def dashboard():
                 border-bottom: 1px solid var(--card-border);
                 padding-bottom: 16px;
                 margin-bottom: 24px;
+                flex-wrap: wrap;
+                gap: 12px;
             }
             .tabs {
                 display: flex;
@@ -114,6 +119,7 @@ async def dashboard():
                 margin-bottom: 20px;
                 border-bottom: 1px solid var(--card-border);
                 padding-bottom: 8px;
+                overflow-x: auto;
             }
             .tab-btn {
                 background: transparent;
@@ -122,9 +128,10 @@ async def dashboard():
                 padding: 10px 18px;
                 border-radius: 8px;
                 cursor: pointer;
-                font-size: 15px;
+                font-size: 14px;
                 font-weight: 600;
                 transition: all 0.2s;
+                white-space: nowrap;
             }
             .tab-btn.active {
                 background: var(--card);
@@ -213,8 +220,7 @@ async def dashboard():
                 padding: 6px;
                 font-family: inherit;
             }
-            .input-text {
-                width: 100%;
+            .input-text, select.input-text {
                 background: #090d16;
                 color: #fff;
                 border: 1px solid #334155;
@@ -235,6 +241,27 @@ async def dashboard():
                 max-height: 850px;
                 border-radius: 4px;
             }
+            .compare-box {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-top: 8px;
+            }
+            .compare-stiff {
+                background: rgba(239, 68, 68, 0.1);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                padding: 10px 14px;
+                border-radius: 8px;
+                color: #fca5a5;
+            }
+            .compare-natural {
+                background: rgba(16, 185, 129, 0.1);
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                padding: 10px 14px;
+                border-radius: 8px;
+                color: #6ee7b7;
+                font-weight: 600;
+            }
         </style>
     </head>
     <body>
@@ -243,11 +270,18 @@ async def dashboard():
                 <div>
                     <h1 style="margin:0; font-size:26px;">🎨 MangaThaiAI-Studio</h1>
                     <p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">
-                        ระบบแปลมังงะญี่ปุ่นเป็นไทยแบบเรียลไทม์ | <b>Live Web Manga Translator</b>
+                        ระบบแปลมังงะญี่ปุ่นเป็นไทยแบบเรียลไทม์ | <b>Authentic Natural Dialogue Engine</b>
                     </p>
                 </div>
-                <div>
-                    <span class="badge badge-online">● Laptop Control Center (Online)</span>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <label style="font-size:13px; color:var(--text-muted);">🎭 โทนสำนวนมังงะ:</label>
+                    <select id="globalToneSelect" class="input-text" onchange="onToneChanged()">
+                        <option value="shonen">⚔️ โชเน็น / แอ็กชัน (ดุดัน โผงผาง)</option>
+                        <option value="shojo">🌸 โรแมนติก / ตาหวาน (ละมุน ซึนเดเระ)</option>
+                        <option value="seinen">🕵️ สืบสวน / สุขุม (จริงจัง ลุ่มลึก)</option>
+                        <option value="comedy">🤣 การ์ตูนแก๊ก / ตลก (คำสร้อย กวนๆ)</option>
+                    </select>
+                    <span class="badge badge-online">● Laptop Control Center</span>
                 </div>
             </header>
 
@@ -255,6 +289,7 @@ async def dashboard():
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('tab-webreader')">🌐 โหมดแปลหน้าเว็บมังงะแบบเรียลไทม์ (Web Reader)</button>
                 <button class="tab-btn" onclick="switchTab('tab-bookmarklet')">📌 Bookmarklet (แปลบนเว็บใดก็ได้ในโลก)</button>
+                <button class="tab-btn" onclick="switchTab('tab-showcase')">🎭 ทดสอบสำนวนเปรียบเทียบ (Natural vs Stiff)</button>
                 <button class="tab-btn" onclick="switchTab('tab-studio')">🛠 สตูดิโอตรวจจับ & ปรับแต่งบอลลูน (Manual Studio)</button>
             </div>
 
@@ -266,7 +301,7 @@ async def dashboard():
                         วางลิงก์หน้าเว็บมังงะ (Manga Chapter URL) หรือลิงก์รูปภาพมังงะ ระบบจะดึงหน้ามังงะมาแสดงและแปลภาษาไทยสดทีละหน้าหรือทุกหน้าอัตโนมัติ
                     </p>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="webUrlInput" class="input-text" placeholder="ตัวอย่าง: https://example.com/manga-chapter-1 หรือ ลิงก์รูปภาพมังงะ .png / .jpg">
+                        <input type="text" id="webUrlInput" class="input-text" style="width:100%;" placeholder="ตัวอย่าง: https://example.com/manga-chapter-1 หรือ ลิงก์รูปภาพมังงะ .png / .jpg">
                         <button class="btn btn-success" style="white-space:nowrap;" onclick="fetchAndReadWebManga()">🚀 ดึงข้อมูล & เปิดอ่าน</button>
                     </div>
                     <div style="margin-top:10px; font-size:12px; color:var(--text-muted);">
@@ -315,7 +350,86 @@ async def dashboard():
                 </div>
             </div>
 
-            <!-- ================= TAB 3: STUDIO ================= -->
+            <!-- ================= TAB 3: SHOWCASE (NATURAL VS STIFF) ================= -->
+            <div id="tab-showcase" class="tab-content" style="display:none;">
+                <div class="card">
+                    <h2 style="margin-top:0; font-size:18px;">🎭 ผลการทดสอบเปรียบเทียบ: สำนวนมังงะธรรมชาติ (MangaThaiAI) vs แปลแข็งทื่อ (Google Translate)</h2>
+                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">
+                        ทดสอบประโยคบทพูดมังงะยอดนิยมในสถานการณ์ต่าง ๆ และหลากหลายภาษาต้นฉบับ เพื่อให้มั่นใจว่าอ่านสนุก ไม่แข็งกระด้าง
+                    </p>
+
+                    <!-- Samples Grid -->
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="card" style="margin:0; background:#0b1120;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:#a5b4fc;">🇯🇵 ภาษาญี่ปุ่น: โหมดต่อสู้ (Shonen)</span>
+                                <span class="badge" style="background:#312e81; color:#c7d2fe;">おい、待てよ！逃げるな！</span>
+                            </div>
+                            <div class="compare-box">
+                                <div class="compare-stiff">❌ Google Translate แข็งทื่อ:<br><b>"เฮ้ย รอเดี๋ยว! อย่าหนี!"</b></div>
+                                <div class="compare-natural">✅ MangaThaiAI ธรรมชาติ:<br><b>"เฮ้ย! รอก่อนสิฟะ! อย่าหนีนะเว้ย!"</b></div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin:0; background:#0b1120;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:#a5b4fc;">🇯🇵 ภาษาญี่ปุ่น: โหมดตกใจ / ทะเลาะ</span>
+                                <span class="badge" style="background:#312e81; color:#c7d2fe;">何だと…！？貴様、許さん！</span>
+                            </div>
+                            <div class="compare-box">
+                                <div class="compare-stiff">❌ Google Translate แข็งทื่อ:<br><b>"มันคืออะไร...!? คุณ ฉันจะไม่ยกโทษให้คุณ!"</b></div>
+                                <div class="compare-natural">✅ MangaThaiAI ธรรมชาติ:<br><b>"ว่าไงนะ...!? หนอยแก อย่าหวังว่าจะรอดไปได้!"</b></div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin:0; background:#0b1120;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:#a5b4fc;">🇯🇵 ภาษาญี่ปุ่น: โหมดตาหวาน / ซึนเดเระ (Shojo)</span>
+                                <span class="badge" style="background:#312e81; color:#c7d2fe;">べ、別にあんたのためじゃないんだからね！</span>
+                            </div>
+                            <div class="compare-box">
+                                <div class="compare-stiff">❌ Google Translate แข็งทื่อ:<br><b>"มันไม่ใช่สำหรับคุณโดยเฉพาะ!"</b></div>
+                                <div class="compare-natural">✅ MangaThaiAI ธรรมชาติ:<br><b>"ไม่ได้ทำให้เธอสักหน่อย อย่าเข้าใจผิดนะยะ!"</b></div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin:0; background:#0b1120;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:#a5b4fc;">🇺🇸 ภาษาอังกฤษ: Comic Slang</span>
+                                <span class="badge" style="background:#312e81; color:#c7d2fe;">What the hell is going on here!? Bring it on!</span>
+                            </div>
+                            <div class="compare-box">
+                                <div class="compare-stiff">❌ Google Translate แข็งทื่อ:<br><b>"นรกคืออะไรที่เกิดขึ้นที่นี่!? นำมันมา!"</b></div>
+                                <div class="compare-natural">✅ MangaThaiAI ธรรมชาติ:<br><b>"มันเรื่องบ้าอะไรวะเนี่ย! เข้ามาเลยวะ!"</b></div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin:0; background:#0b1120;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:#a5b4fc;">🇰🇷 มันฮวาเกาหลี: Manhwa Action</span>
+                                <span class="badge" style="background:#312e81; color:#c7d2fe;">말도 안 돼… 오빠, 도망쳐!</span>
+                            </div>
+                            <div class="compare-box">
+                                <div class="compare-stiff">❌ Google Translate แข็งทื่อ:<br><b>"พูดไม่สมเหตุสมผล... พี่ชาย, หนีไป!"</b></div>
+                                <div class="compare-natural">✅ MangaThaiAI ธรรมชาติ:<br><b>"เป็นไปไม่ได้น่า...! พี่คะ หนีเร็วเข้า!"</b></div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin:0; background:#0b1120;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; color:#a5b4fc;">🇨🇳 ม่านฮวาจีน: Manhua กำลังภายใน</span>
+                                <span class="badge" style="background:#312e81; color:#c7d2fe;">找死！看招！</span>
+                            </div>
+                            <div class="compare-box">
+                                <div class="compare-stiff">❌ Google Translate แข็งทื่อ:<br><b>"กำลังมองหาความตาย! ดูการย้าย!"</b></div>
+                                <div class="compare-natural">✅ MangaThaiAI ธรรมชาติ:<br><b>"รนหาที่ตาย! รับกระบวนท่านี้ไปซะ!"</b></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= TAB 4: STUDIO ================= -->
             <div id="tab-studio" class="tab-content" style="display:none;">
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
@@ -387,6 +501,16 @@ async def dashboard():
                 event.target.classList.add('active');
             }
 
+            function getSelectedTone() {
+                return document.getElementById('globalToneSelect').value;
+            }
+
+            function onToneChanged() {
+                if (document.getElementById('editorSection').style.display !== 'none') {
+                    reRenderWithEdits();
+                }
+            }
+
             function loadTestUrl() {
                 document.getElementById('webUrlInput').value = 'http://localhost:8000/static/sample_manga.png';
             }
@@ -433,7 +557,7 @@ async def dashboard():
                                 </div>
                             </div>
                             <img id="mangaImg_${idx}" src="${escapeHtml(imgUrl)}" data-original="${escapeHtml(imgUrl)}" alt="Page ${idx + 1}">
-                            <div id="status_${idx}" style="margin-top:8px; font-size:12px; color:#94a3b8;">ต้นฉบับภาษาญี่ปุ่น</div>
+                            <div id="status_${idx}" style="margin-top:8px; font-size:12px; color:#94a3b8;">ต้นฉบับ</div>
                         `;
                         container.appendChild(card);
                     });
@@ -446,16 +570,17 @@ async def dashboard():
                 const imgEl = document.getElementById('mangaImg_' + idx);
                 const statusEl = document.getElementById('status_' + idx);
                 const btn = document.getElementById('btnTranslate_' + idx);
+                const tone = getSelectedTone();
 
                 btn.disabled = true;
                 btn.innerText = '⏳ กำลังแปล...';
-                statusEl.innerHTML = '<span style="color:#fbbf24;">กำลังลบตัวหนังสือและลงภาษาไทย...</span>';
+                statusEl.innerHTML = '<span style="color:#fbbf24;">กำลังลบตัวหนังสือและลงภาษาไทย (โทน: ' + tone + ')...</span>';
 
                 try {
                     const res = await fetch('/api/translate-image-url', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image_url: imgUrl })
+                        body: JSON.stringify({ image_url: imgUrl, tone: tone })
                     });
                     const data = await res.json();
                     if (data.status === 'success') {
@@ -504,7 +629,8 @@ async def dashboard():
             async function runSampleDemo() {
                 const viewer = document.getElementById('viewerGrid');
                 viewer.style.display = 'grid';
-                const res = await fetch('/api/demo-sample');
+                const tone = getSelectedTone();
+                const res = await fetch('/api/demo-sample?tone=' + tone);
                 const data = await res.json();
                 renderPipelineResults(data);
             }
@@ -512,8 +638,10 @@ async def dashboard():
             async function uploadCustomManga(input) {
                 if (!input.files || !input.files[0]) return;
                 const file = input.files[0];
+                const tone = getSelectedTone();
                 const formData = new FormData();
                 formData.append('file', file);
+                formData.append('tone', tone);
 
                 document.getElementById('viewerGrid').style.display = 'grid';
                 const res = await fetch('/api/process-custom-page', { method: 'POST', body: formData });
@@ -551,6 +679,7 @@ async def dashboard():
             }
 
             async function reRenderWithEdits() {
+                const tone = getSelectedTone();
                 const updatedDialogues = currentBubbles.map((b, idx) => {
                     return {
                         id: b.id,
@@ -562,7 +691,8 @@ async def dashboard():
 
                 const payload = {
                     image_source: currentImageSource,
-                    dialogues: updatedDialogues
+                    dialogues: updatedDialogues,
+                    tone: tone
                 };
 
                 const res = await fetch('/api/rerender', {
@@ -598,27 +728,26 @@ async def fetch_webpage_manga(req: FetchWebpageRequest):
 class TranslateImageUrlRequest(BaseModel):
     image_url: str
     referer: Optional[str] = None
+    tone: str = "shonen"
 
 
 @app.post("/api/translate-image-url")
 async def translate_image_url(req: TranslateImageUrlRequest):
     try:
-        # If url is local static sample
         if "sample_manga.png" in req.image_url:
             local_path = INPUT_DIR / "sample_manga.png"
             if not local_path.exists():
                 from scripts.create_sample_manga import generate_sample_manga
                 local_path = generate_sample_manga(str(local_path))
-            res = pipeline.process_page(local_path)
+            res = pipeline.process_page(local_path, tone=req.tone)
         else:
             image_bytes = await crawler.fetch_image_bytes(req.image_url, referer=req.referer)
-            # Save temporarily
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 tmp.write(image_bytes)
                 tmp_path = Path(tmp.name)
 
             try:
-                res = pipeline.process_page(tmp_path)
+                res = pipeline.process_page(tmp_path, tone=req.tone)
             finally:
                 if tmp_path.exists():
                     tmp_path.unlink()
@@ -636,13 +765,13 @@ async def translate_image_url(req: TranslateImageUrlRequest):
 
 
 @app.get("/api/demo-sample")
-async def demo_sample():
+async def demo_sample(tone: str = "shonen"):
     sample_path = INPUT_DIR / "sample_manga.png"
     if not sample_path.exists():
         from scripts.create_sample_manga import generate_sample_manga
         sample_path = generate_sample_manga(str(sample_path))
 
-    res = pipeline.process_page(sample_path)
+    res = pipeline.process_page(sample_path, tone=tone)
     return {
         "status": "success",
         "saved_path": str(sample_path),
@@ -654,12 +783,12 @@ async def demo_sample():
 
 
 @app.post("/api/process-custom-page")
-async def process_custom_page(file: UploadFile = File(...)):
+async def process_custom_page(file: UploadFile = File(...), tone: str = Form("shonen")):
     save_path = INPUT_DIR / file.filename
     with open(save_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    res = pipeline.process_page(save_path)
+    res = pipeline.process_page(save_path, tone=tone)
     return {
         "status": "success",
         "saved_path": str(save_path),
@@ -673,6 +802,7 @@ async def process_custom_page(file: UploadFile = File(...)):
 class ReRenderRequest(BaseModel):
     image_source: str
     dialogues: List[Dict[str, Any]]
+    tone: str = "shonen"
 
 
 @app.post("/api/rerender")
@@ -684,7 +814,7 @@ async def rerender(req: ReRenderRequest):
     bboxes = [d.get("bbox") for d in req.dialogues if "bbox" in d]
     dialogues = [{"jp": d.get("jp", ""), "th": d.get("th", "")} for d in req.dialogues]
 
-    res = pipeline.process_page(img_path, dialogues=dialogues, custom_bboxes=bboxes)
+    res = pipeline.process_page(img_path, dialogues=dialogues, custom_bboxes=bboxes, tone=req.tone)
     return {
         "status": "success",
         "result_b64": pil_to_base64(res["result_pil"]),

@@ -14,6 +14,7 @@ from PIL import Image
 
 from control_center.pipeline.bubble_detector import BubbleDetector
 from control_center.pipeline.inpainter import MangaTextInpainter
+from control_center.pipeline.translator import manga_translator, MangaTone
 from control_center.typesetting.renderer import ThaiMangaTypesetter
 
 
@@ -22,18 +23,23 @@ class ZeroTrainingMangaPipeline:
         self.detector = BubbleDetector()
         self.inpainter = MangaTextInpainter()
         self.typesetter = ThaiMangaTypesetter(font_path=font_path)
+        self.translator = manga_translator
 
     def process_page(
         self,
         image_path: Path,
         dialogues: Optional[List[Dict[str, str]]] = None,
         custom_bboxes: Optional[List[List[int]]] = None,
+        tone: str = "shonen",
+        source_lang: str = "auto",
     ) -> Dict[str, Any]:
         """
         Executes end-to-end translation pipeline on a manga page.
         image_path: Path to manga page image
         dialogues: Optional list of dicts with keys 'jp' and 'th'
         custom_bboxes: Optional user-specified or adjusted bounding boxes
+        tone: Manga tone preset ('shonen', 'shojo', 'seinen', 'comedy')
+        source_lang: Source language ('auto', 'jp', 'en', 'kr', 'cn')
         """
         image_bgr = cv2.imread(str(image_path))
         if image_bgr is None:
@@ -56,13 +62,13 @@ class ZeroTrainingMangaPipeline:
         # 2. Text Inpainting (Clean speech bubbles)
         cleaned_bgr = self.inpainter.inpaint_bubbles(image_bgr, bboxes)
 
-        # 3. Match dialogue to bubbles
+        # 3. Match dialogue to bubbles and apply natural manga translation
         bubble_data = []
         default_pairs = [
-            {"jp": "おい、待てよ！\nそんなところへ行くな！", "th": "เฮ้ย รอก่อนสิ!\nอย่าไปทางนั้นนะ!"},
-            {"jp": "ふふ…\nもう遅いよ。", "th": "หึหึ…\nมันสายไปแล้วล่ะ"},
-            {"jp": "何だと…！？\n嘘だろ…", "th": "ว่าไงนะ…!?\nล้อเล่นน่า…"},
-            {"jp": "覚悟しろ！", "th": "เตรียมใจไว้ซะ!"},
+            {"jp": "おい、待てよ！\nそんなところへ行くな！", "th": ""},
+            {"jp": "ふふ…\nもう遅いよ。", "th": ""},
+            {"jp": "何だと…！？\n嘘だろ…", "th": ""},
+            {"jp": "覚悟しろ！", "th": ""},
         ]
 
         cleaned_rgb = cv2.cvtColor(cleaned_bgr, cv2.COLOR_BGR2RGB)
@@ -76,6 +82,13 @@ class ZeroTrainingMangaPipeline:
                 pair = default_pairs[i % len(default_pairs)]
                 jp_text = pair["jp"]
                 th_text = pair["th"]
+
+            # If Thai translation not explicitly provided, polish through natural manga translator
+            if not th_text and jp_text:
+                th_text = self.translator.translate_and_polish(jp_text, source_lang=source_lang, tone=tone)
+            elif th_text:
+                # Apply tone polish and clean any stiff robotic artifacts
+                th_text = self.translator._apply_tone(th_text, tone)
 
             bubble_data.append({
                 "id": i + 1,
