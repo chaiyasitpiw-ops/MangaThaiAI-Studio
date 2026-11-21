@@ -35,6 +35,15 @@ models/
 .DS_Store
 Thumbs.db
 
-# Environment variables
+# Environment variables & Tokens
 .env
 .env.local
+hf_token.txt
+cloudflared.exe
+test_*.png
+test_*.py
+debug_*.py
+IPHONE_QR.png
+IPHONE_URL.txt
+CLOUD_QR.png
+CLOUD_URL.txt

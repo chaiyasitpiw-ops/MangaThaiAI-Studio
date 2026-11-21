@@ -10,7 +10,16 @@
     }
     window.__mangaThaiLoaded = true;
 
-    const API_BASE = "http://localhost:8000";
+    // Determine API origin dynamically (works on localhost, LAN IP, or Cloudflare Tunnel on iPhone/iPad)
+    const API_BASE = window.__MANGATHAI_API || (function() {
+        const scripts = document.getElementsByTagName('script');
+        for (let i = scripts.length - 1; i >= 0; i--) {
+            if (scripts[i].src && scripts[i].src.includes('bookmarklet.js')) {
+                try { return new URL(scripts[i].src).origin; } catch(e) {}
+            }
+        }
+        return "http://localhost:8000";
+    })();
 
     // 1. Create floating HUD Toolbar
     const hud = document.createElement("div");

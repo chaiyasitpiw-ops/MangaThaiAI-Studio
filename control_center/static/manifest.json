@@ -1,0 +1,28 @@
+{
+  "name": "MangaThaiAI Studio",
+  "short_name": "มังงะไทย",
+  "description": "แปลมังงะและเว็บตูนเป็นภาษาไทยแบบเรียลไทม์ — ฟอนต์การ์ตูน ไม่แข็งทื่อ",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b14",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "lang": "th",
+  "categories": ["entertainment", "books"],
+  "prefer_related_applications": false
+}

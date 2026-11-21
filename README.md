@@ -1,4 +1,14 @@
-# 🎨 MangaThaiAI-Studio
+---
+title: MangaThaiAI Studio
+emoji: ⚡
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
+# 🎨 MangaThaiAI-Studio 2.0 (iPhone / iPad & Cloud 24H)
 
 ระบบแปลมังงะภาษาญี่ปุ่นเป็นภาษาไทยอัตโนมัติด้วย AI พร้อมการลบข้อความในบอลลูน (Inpainting) และการจัดเรียงตัวอักษรภาษาไทย (Typesetting)
 ออกแบบสถาปัตยกรรมแบบ **Distributed Multi-Machine (LAN Orchestration)** เพื่อรองรับการทำงานร่วมกันระหว่างโน้ตบุ๊กและคอมพิวเตอร์ประมวลผลสูง (Gaming PC)
