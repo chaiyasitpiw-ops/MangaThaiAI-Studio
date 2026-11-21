@@ -571,7 +571,7 @@ async def dashboard():
                         <input type="text" id="webUrlInput" class="input-text" style="flex:1; min-width:280px;" 
                                placeholder="วางลิงก์ เช่น https://newxtoon5.com/comics/358/chapters/1080994">
                         
-                        <!-- 3 Action Buttons as requested -->
+                        <!-- Action Buttons -->
                         <button class="btn btn-outline" style="border-color:#38bdf8; color:#38bdf8;" onclick="openSourceWebpage()" title="เปิดดูหน้าเว็บต้นฉบับในแท็บใหม่ทันที">
                             🌐 เปิดหน้าเว็บต้นฉบับ
                         </button>
@@ -581,15 +581,36 @@ async def dashboard():
                         <button class="btn btn-success" onclick="fetchAndReadWebManga(true)" title="เช็คหน้าและแปลภาษาไทยครบทุกหน้าทันที">
                             ⚡ กดแปลทั้งหมดทันที
                         </button>
+                        <button class="btn btn-outline" style="border-color:#10b981; color:#34d399;" onclick="document.getElementById('fileUploadInput').click()" title="อัปโหลดรูปภาพมังงะจากเครื่อง หรือกด Ctrl+V เพื่อวางรูปภาพได้ทันที">
+                            📁 อัปโหลดรูป / วางภาพ (Ctrl+V)
+                        </button>
+                        <input type="file" id="fileUploadInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this.files)">
                     </div>
 
                     <!-- Quick Shortcuts / Tag Pills -->
                     <div style="margin-top:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <span style="font-size:12px; color:var(--text-muted); font-weight:600;">⚡ ตอนทดสอบด่วน:</span>
-                        <a class="tag-pill" style="border-color:#a855f7; color:#d8b4fe;" onclick="loadQuickUrl('newxtoon')">🇰🇷 NewxToon ครูของฉัน (ตอน 120 - 75 หน้า)</a>
+                        <a class="tag-pill" style="border-color:#ef4444; color:#fca5a5; font-weight:700; background:#450a0a;" onclick="loadQuickUrl('newxtoon_18')">🔞 NewXtoon 18+ ตอน 24 (졸업 후 반 친구들을 다 따먹음)</a>
+                        <a class="tag-pill" style="border-color:#a855f7; color:#d8b4fe;" onclick="loadQuickUrl('newxtoon')">🇰🇷 NewxToon ตอน 120 (75 หน้า)</a>
                         <a class="tag-pill" onclick="loadQuickUrl('overgeared')">⚡ Overgeared ตอน 343 (Asura)</a>
                         <a class="tag-pill" onclick="loadQuickUrl('sololeveling')">⚔️ Solo Leveling</a>
                         <a class="tag-pill" onclick="loadQuickUrl('demo')">🧪 ภาพทดสอบระบบ Demo</a>
+                    </div>
+
+                    <!-- HTML Source / Direct Images Paste Box (Instant Cloudflare Bypass) -->
+                    <div style="margin-top:12px;">
+                        <button class="btn btn-outline" style="font-size:12px; padding:4px 12px; color:#38bdf8; border-color:#0284c7;" onclick="toggleHtmlPasteDrawer()">
+                            📋 วางโค้ด HTML หน้าเว็บ / ลิงก์รูปภาพโดยตรง (แก้ปัญหาเว็บติด Cloudflare เช่น NewXtoon) ▼
+                        </button>
+                        <div id="htmlPasteDrawer" style="display:none; margin-top:10px; background:#0b1329; border:1px solid #334155; border-radius:8px; padding:12px;">
+                            <div style="font-size:12px; color:#94a3b8; margin-bottom:6px;">
+                                💡 หากเว็บมังงะติด Cloudflare ป้องกัน คุณสามารถเปิดหน้าเว็บในเบราว์เซอร์ → คลิกขวา <b>"ดูซอร์สโค้ดหน้าเว็บ (View Source)"</b> หรือกด <b>Ctrl+U</b> → คัดลอกมาวางที่นี่เพื่อดึงรูปครบ 100% ทันที:
+                            </div>
+                            <textarea id="rawHtmlInput" class="input-text" style="width:100%; height:90px; font-size:12px; font-family:monospace;" placeholder="วางโค้ด HTML ของหน้ามังงะ หรือวางลิงก์รูปภาพแยกทีละบรรทัดที่นี่..."></textarea>
+                            <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+                                <button class="btn btn-success" style="font-size:12px; padding:6px 14px;" onclick="extractAndReadFromPastedHtml()">📥 ดึงรูปภาพจากโค้ด HTML ทันที</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- In-App Webpage Preview Collapsible Drawer -->
@@ -624,7 +645,28 @@ async def dashboard():
                     </div>
 
                     <!-- Compact Reader Preferences Bar -->
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #1e293b;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #1e293b;">
+                        <div>
+                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🌐 ภาษาต้นฉบับ (Source Language):</label>
+                            <select id="sourceLangSelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
+                                <option value="auto" selected>🌐 ตรวจจับภาษาอัตโนมัติ (Auto-Detect)</option>
+                                <option value="kr">🇰🇷 เกาหลี (Korean Manhwa - เช่น NewXtoon, Toptoon)</option>
+                                <option value="ru">🇷🇺 รัสเซีย (Russian Manga/Webtoons - เช่น MangaLib)</option>
+                                <option value="en">🇺🇸 อังกฤษ (English Comics/Webtoons - เช่น Asura)</option>
+                                <option value="cn">🇨🇳 จีน (Chinese Manhua - เช่น ColaManga)</option>
+                                <option value="jp">🇯🇵 ญี่ปุ่น (Japanese Manga & Doujinshi)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎭 โทนสำนวนบทพูด:</label>
+                            <select id="globalToneSelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
+                                <option value="adult_18" selected>🔞 มังงะ 18+ / สายดาร์ก & ผู้ใหญ่ (เผ็ดร้อน ครางเสียว จัดหนัก [แนะนำ])</option>
+                                <option value="shonen">⚔️ โชเน็น / แอ็กชัน (แก, ข้า, ลุย, ดุดัน)</option>
+                                <option value="shojo">🌸 โรแมนติก / ตาหวาน (นาย, ฉัน, ละมุน)</option>
+                                <option value="seinen">🕵️ สืบสวน / สุขุม (จริงจัง ลุ่มลึก เป็นธรรมชาติ)</option>
+                                <option value="comedy">🤣 การ์ตูนแก๊ก / ตลก (คำสร้อย กวนๆ ฮาๆ)</option>
+                            </select>
+                        </div>
                         <div>
                             <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎨 ฟอนต์ตัวอักษร:</label>
                             <select id="fontFamilySelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
@@ -639,15 +681,6 @@ async def dashboard():
                                 <option value="natural" selected>🎨 ลายเส้นมังงะแท้ 100% (ไร้กรอบ ไร้เหลี่ยม [แนะนำ])</option>
                                 <option value="soft_white">⚪ รองพื้นขาวนุ่มนวล (Soft White)</option>
                                 <option value="none">✨ ตัวหนังสือเพียวๆ</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎭 โทนสำนวนบทพูด:</label>
-                            <select id="globalToneSelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
-                                <option value="shonen" selected>⚔️ โชเน็น / แอ็กชัน (แก, ข้า, ลุย, ดุดัน)</option>
-                                <option value="shojo">🌸 โรแมนติก / ตาหวาน (นาย, ฉัน, ละมุน)</option>
-                                <option value="seinen">🕵️ สืบสวน / สุขุม (จริงจัง ลุ่มลึก เป็นธรรมชาติ)</option>
-                                <option value="comedy">🤣 การ์ตูนแก๊ก / ตลก (คำสร้อย กวนๆ ฮาๆ)</option>
                             </select>
                         </div>
                     </div>
@@ -1203,20 +1236,97 @@ async def dashboard():
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
+            function toggleHtmlPasteDrawer() {
+                const el = document.getElementById('htmlPasteDrawer');
+                el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+            }
+
+            function extractAndReadFromPastedHtml() {
+                const raw = document.getElementById('rawHtmlInput').value.trim();
+                if (!raw) {
+                    alert('กรุณาวางโค้ด HTML หรือลิงก์รูปภาพก่อนครับ');
+                    return;
+                }
+
+                const seen = new Set();
+                const urls = [];
+
+                // 1. Keyword-based extraction for manga chapter images
+                const re = /https?:\/\/[^\s'"<>]+\.(?:webp|jpg|jpeg|png)(?:\?[^\s'"<>]*)?/gi;
+                let m;
+                while ((m = re.exec(raw)) !== null) {
+                    const u = m[0];
+                    const uLow = u.toLowerCase();
+                    if (!seen.has(u) && !uLow.includes('/ads/') && !uLow.includes('avatar') && !uLow.includes('banner') && !uLow.includes('logo') && !uLow.includes('icon')) {
+                        if (uLow.includes('chapter') || uLow.includes('quicksharefiles') || uLow.includes('comic') || uLow.includes('manga') || uLow.includes('storage') || uLow.includes('cdn')) {
+                            seen.add(u);
+                            urls.push(u);
+                        }
+                    }
+                }
+
+                // 2. Fallback: if no keyword matches, accept all non-ad image URLs
+                if (urls.length === 0) {
+                    re.lastIndex = 0;
+                    while ((m = re.exec(raw)) !== null) {
+                        const u = m[0];
+                        const uLow = u.toLowerCase();
+                        if (!seen.has(u) && !uLow.includes('/ads/') && !uLow.includes('avatar') && !uLow.includes('banner')) {
+                            seen.add(u);
+                            urls.push(u);
+                        }
+                    }
+                }
+
+                if (urls.length > 0) {
+                    fetchedWebImages = urls;
+                    const inspectCard = document.getElementById('chapterInspectorCard');
+                    const inspectTitle = document.getElementById('inspectTitle');
+                    const inspectSubtitle = document.getElementById('inspectSubtitle');
+                    const inspectPageCount = document.getElementById('inspectPageCount');
+                    const inspectPageCountBtn = document.getElementById('inspectPageCountBtn');
+
+                    inspectCard.style.display = 'block';
+                    inspectTitle.innerText = 'สกัดรูปภาพจากโค้ด HTML สำเร็จ';
+                    inspectPageCount.innerText = urls.length;
+                    inspectPageCountBtn.innerText = urls.length;
+                    inspectSubtitle.innerHTML = `✅ สกัดรูปภาพตอนมังงะได้ทั้งหมด <b style="color:#34d399; font-size:15px;">${urls.length}</b> หน้า พร้อมแปลทันที!`;
+                    showNotification(`✅ สกัดรูปภาพได้ ${urls.length} หน้าจากโค้ด HTML!`, 'success');
+                    renderPagesIntoReader(urls);
+                    document.getElementById('webReaderSection').style.display = 'block';
+                    document.getElementById('htmlPasteDrawer').style.display = 'none';
+                    if (document.getElementById('autoTranslateCheck').checked) {
+                        startBatchTranslation();
+                    }
+                } else {
+                    alert('ไม่พบรูปภาพมังงะในข้อความที่วาง กรุณาตรวจสอบว่ามีแท็ก <img> หรือลิงก์รูปภาพ .webp / .jpg');
+                }
+            }
+
             function loadQuickUrl(type) {
                 const input = document.getElementById('webUrlInput');
                 switchTab('tab-webreader');
-                if (type === 'newxtoon') {
-                    input.value = 'https://newxtoon5.com/comics/358/chapters/1080994';
+                if (type === 'newxtoon_18') {
+                    input.value = 'https://newxtoon5.com/comics/17962/chapters/1080367';
+                    document.getElementById('globalToneSelect').value = 'adult_18';
+                    document.getElementById('sourceLangSelect').value = 'kr';
+                    checkAllWebtoonPages();
+                } else if (type === 'newxtoon') {
+                    input.value = 'https://newxtoon5.com/comics/17962/chapters/1080367';
+                    document.getElementById('globalToneSelect').value = 'adult_18';
+                    document.getElementById('sourceLangSelect').value = 'kr';
                     checkAllWebtoonPages();
                 } else if (type === 'overgeared') {
                     input.value = 'https://asurascans.com/comics/overgeared-1bb35e56/chapter/343';
+                    document.getElementById('sourceLangSelect').value = 'en';
                     checkAllWebtoonPages();
                 } else if (type === 'sololeveling') {
                     input.value = 'https://asurascans.com/comics/solo-leveling/chapter/1';
+                    document.getElementById('sourceLangSelect').value = 'en';
                     checkAllWebtoonPages();
                 } else if (type === 'onepiece') {
                     input.value = 'https://mangaplus.shueisha.co.jp/viewer/1000001';
+                    document.getElementById('sourceLangSelect').value = 'en';
                     checkAllWebtoonPages();
                 } else if (type === 'demo') {
                     input.value = window.location.origin + '/static/sample_manga.png';
@@ -1412,6 +1522,48 @@ async def dashboard():
                 setReaderMode(currentReaderMode);
             }
 
+            function handleFileUpload(files) {
+                if (!files || files.length === 0) return;
+                const images = [];
+                let loaded = 0;
+                Array.from(files).forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        images.push(e.target.result);
+                        loaded++;
+                        if (loaded === files.length) {
+                            fetchedWebImages = images;
+                            const inspectCard = document.getElementById('chapterInspectorCard');
+                            document.getElementById('inspectTitle').innerText = `อัปโหลด ${images.length} รูปภาพสำเร็จ`;
+                            document.getElementById('inspectPageCount').innerText = images.length;
+                            document.getElementById('inspectPageCountBtn').innerText = images.length;
+                            document.getElementById('inspectSubtitle').innerHTML = `✅ โหลดรูปภาพจากเครื่องเรียบร้อย <b>${images.length}</b> หน้า พร้อมแปลทันที`;
+                            inspectCard.style.display = 'block';
+                            renderPagesIntoReader(images);
+                            document.getElementById('webReaderSection').style.display = 'block';
+                            showNotification(`📁 โหลดรูปภาพ ${images.length} หน้าพร้อมแปล!`, 'success');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Clipboard Paste support (Ctrl+V)
+            window.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                if (!items) return;
+                const imageFiles = [];
+                for (let item of items) {
+                    if (item.type && item.type.indexOf('image') !== -1) {
+                        const blob = item.getAsFile();
+                        if (blob) imageFiles.push(blob);
+                    }
+                }
+                if (imageFiles.length > 0) {
+                    handleFileUpload(imageFiles);
+                }
+            });
+
             async function checkAllWebtoonPages() {
                 if (!systemEnabled) {
                     showNotification('❌ ระบบปิดอยู่ กรุณาเปิดสวิตช์มุมขวาบนก่อน', 'warning');
@@ -1579,6 +1731,7 @@ async def dashboard():
                 const tone = document.getElementById('globalToneSelect').value;
                 const fontFamily = document.getElementById('fontFamilySelect').value;
                 const backdropMode = document.getElementById('backdropModeSelect').value;
+                const sourceLang = document.getElementById('sourceLangSelect') ? document.getElementById('sourceLangSelect').value : 'auto';
 
                 btn.disabled = true;
                 btn.innerText = '⏳';
@@ -1592,6 +1745,7 @@ async def dashboard():
                         body: JSON.stringify({ 
                             image_url: imgUrl, 
                             tone: tone,
+                            source_lang: sourceLang,
                             font_family: fontFamily,
                             backdrop_mode: backdropMode
                         })
@@ -1675,9 +1829,19 @@ class FetchWebpageRequest(BaseModel):
     url: str
 
 
+class ExtractHtmlRequest(BaseModel):
+    html: str
+    url: Optional[str] = "https://newxtoon5.com/"
+
+
 @app.post("/api/fetch-webpage-manga")
 async def fetch_webpage_manga(req: FetchWebpageRequest):
     return await crawler.extract_manga_images_from_url(req.url)
+
+
+@app.post("/api/extract-manga-from-html")
+async def extract_manga_from_html_endpoint(req: ExtractHtmlRequest):
+    return crawler.extract_manga_images_from_html(req.html, req.url)
 
 
 @app.get("/manifest.json")
@@ -1699,7 +1863,8 @@ async def health_check():
 class TranslateImageUrlRequest(BaseModel):
     image_url: str
     referer: Optional[str] = None
-    tone: str = "shonen"
+    tone: str = "adult_18"
+    source_lang: str = "auto"
     font_family: str = "mali"
     backdrop_mode: str = "natural"
 
@@ -1710,7 +1875,7 @@ async def translate_image_url(req: TranslateImageUrlRequest):
     try:
         # Check high-performance disk cache
         cache_key = hashlib.md5(
-            f"{req.image_url}_{req.tone}_{req.font_family}_{req.backdrop_mode}".encode("utf-8")
+            f"{req.image_url}_{req.tone}_{req.source_lang}_{req.font_family}_{req.backdrop_mode}".encode("utf-8")
         ).hexdigest()
         cache_file = CACHE_DIR / f"{cache_key}.json"
 
@@ -1724,7 +1889,24 @@ async def translate_image_url(req: TranslateImageUrlRequest):
             except Exception:
                 pass
 
-        if "sample_manga.png" in req.image_url:
+        if req.image_url.startswith("data:image"):
+            header, b64data = req.image_url.split(",", 1)
+            image_bytes = base64.b64decode(b64data)
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                tmp.write(image_bytes)
+                tmp_path = Path(tmp.name)
+            try:
+                res = pipeline.process_page(
+                    tmp_path,
+                    tone=req.tone,
+                    source_lang=req.source_lang,
+                    font_family=req.font_family,
+                    backdrop_mode=req.backdrop_mode,
+                )
+            finally:
+                if tmp_path.exists():
+                    tmp_path.unlink()
+        elif "sample_manga.png" in req.image_url:
             local_path = INPUT_DIR / "sample_manga.png"
             if not local_path.exists():
                 from scripts.create_sample_manga import generate_sample_manga
@@ -1732,6 +1914,7 @@ async def translate_image_url(req: TranslateImageUrlRequest):
             res = pipeline.process_page(
                 local_path,
                 tone=req.tone,
+                source_lang=req.source_lang,
                 font_family=req.font_family,
                 backdrop_mode=req.backdrop_mode,
             )
@@ -1745,6 +1928,7 @@ async def translate_image_url(req: TranslateImageUrlRequest):
                 res = pipeline.process_page(
                     tmp_path,
                     tone=req.tone,
+                    source_lang=req.source_lang,
                     font_family=req.font_family,
                     backdrop_mode=req.backdrop_mode,
                 )

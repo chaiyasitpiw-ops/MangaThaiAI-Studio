@@ -42,8 +42,84 @@ class ZeroTrainingMangaPipeline:
         self.typesetter = ThaiMangaTypesetter(font_path=font_path)
         self.translator = manga_translator
         self.ocr = RapidOCR() if HAS_RAPID_OCR else None
+        self._ocr_engines: Dict[str, Any] = {}
+        if self.ocr:
+            self._ocr_engines["default"] = self.ocr
 
-    def _translate_batch_to_thai(self, texts: List[str], tone: str = "shonen") -> List[str]:
+    def get_ocr_engine(self, lang: str = "auto") -> Optional[Any]:
+        """Returns the specialized OCR engine for the target language (Korean, Russian, Chinese, English)."""
+        lang = (lang or "auto").lower()
+        if lang in ("kr", "ko", "korean"):
+            target_key = "korean"
+        elif lang in ("ru", "russian", "cyrillic"):
+            target_key = "cyrillic"
+        else:
+            target_key = "default"
+
+        if target_key in self._ocr_engines:
+            return self._ocr_engines[target_key]
+
+        models_dir = Path(__file__).resolve().parent.parent.parent / "assets/models"
+        models_dir.mkdir(parents=True, exist_ok=True)
+
+        if target_key == "korean":
+            model_path = models_dir / "korean_rec.onnx"
+            dict_path = models_dir / "korean_dict.txt"
+            if not model_path.exists() or not dict_path.exists():
+                try:
+                    from huggingface_hub import hf_hub_download
+                    import yaml
+                    import shutil
+                    yml_p = hf_hub_download('tobiichioriguchi/korean_PP-OCRv3_mobile_rec_onnx', 'inference.yml')
+                    onnx_p = hf_hub_download('tobiichioriguchi/korean_PP-OCRv3_mobile_rec_onnx', 'inference.onnx')
+                    with open(yml_p, 'r', encoding='utf-8') as f:
+                        cfg = yaml.safe_load(f)
+                    with open(dict_path, 'w', encoding='utf-8') as f:
+                        for c in cfg['PostProcess']['character_dict']:
+                            f.write(c + '\n')
+                    shutil.copy(onnx_p, model_path)
+                except Exception as e:
+                    print("Failed downloading Korean OCR model:", e)
+            if model_path.exists() and dict_path.exists():
+                try:
+                    engine = RapidOCR(rec_model_path=str(model_path), rec_keys_path=str(dict_path))
+                    self._ocr_engines["korean"] = engine
+                    return engine
+                except Exception as e:
+                    print("Error loading Korean OCR:", e)
+
+        elif target_key == "cyrillic":
+            model_path = models_dir / "cyrillic_rec.onnx"
+            dict_path = models_dir / "cyrillic_dict.txt"
+            if not model_path.exists() or not dict_path.exists():
+                try:
+                    from huggingface_hub import hf_hub_download
+                    import yaml
+                    import shutil
+                    yml_p = hf_hub_download('tobiichioriguchi/cyrillic_PP-OCRv3_mobile_rec_onnx', 'inference.yml')
+                    onnx_p = hf_hub_download('tobiichioriguchi/cyrillic_PP-OCRv3_mobile_rec_onnx', 'inference.onnx')
+                    with open(yml_p, 'r', encoding='utf-8') as f:
+                        cfg = yaml.safe_load(f)
+                    with open(dict_path, 'w', encoding='utf-8') as f:
+                        for c in cfg['PostProcess']['character_dict']:
+                            f.write(c + '\n')
+                    shutil.copy(onnx_p, model_path)
+                except Exception as e:
+                    print("Failed downloading Cyrillic OCR model:", e)
+            if model_path.exists() and dict_path.exists():
+                try:
+                    engine = RapidOCR(rec_model_path=str(model_path), rec_keys_path=str(dict_path))
+                    self._ocr_engines["cyrillic"] = engine
+                    return engine
+                except Exception as e:
+                    print("Error loading Cyrillic OCR:", e)
+
+        # Default engine (Chinese, English, Japanese)
+        if "default" not in self._ocr_engines and HAS_RAPID_OCR:
+            self._ocr_engines["default"] = RapidOCR()
+        return self._ocr_engines.get("default")
+
+    def _translate_batch_to_thai(self, texts: List[str], tone: str = "shonen", source_lang: str = "auto") -> List[str]:
         """Translates multiple texts in a single batch HTTP request for 50x speedup."""
         if not texts:
             return []
@@ -54,7 +130,7 @@ class ZeroTrainingMangaPipeline:
         to_translate_texts = []
 
         for idx, t in enumerate(texts):
-            slang = self.translator.lookup_slang(t)
+            slang = self.translator.lookup_slang(t, source_lang=source_lang)
             if slang:
                 results[idx] = self.translator._apply_tone(slang, tone)
             else:
@@ -70,7 +146,15 @@ class ZeroTrainingMangaPipeline:
 
         try:
             url = "https://clients5.google.com/translate_a/t"
-            params = {"client": "dict-chrome-ex", "sl": "auto", "tl": "th", "q": joined_query}
+            lang_code_map = {
+                "auto": "auto", "en": "en", "english": "en",
+                "kr": "ko", "ko": "ko", "korean": "ko",
+                "ru": "ru", "russian": "ru", "cyrillic": "ru",
+                "cn": "zh-CN", "zh": "zh-CN", "chinese": "zh-CN",
+                "jp": "ja", "ja": "ja", "japanese": "ja"
+            }
+            sl = lang_code_map.get(source_lang.lower(), "auto")
+            params = {"client": "dict-chrome-ex", "sl": sl, "tl": "th", "q": joined_query}
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
             }
@@ -99,7 +183,7 @@ class ZeroTrainingMangaPipeline:
 
         # Fallback using multi-engine individual translations
         for idx in to_translate_indices:
-            results[idx] = self.translator.translate_and_polish(texts[idx], tone=tone)
+            results[idx] = self.translator.translate_and_polish(texts[idx], source_lang=source_lang, tone=tone)
         return results
 
     def _fix_manhwa_text(self, text: str) -> str:
@@ -182,11 +266,12 @@ class ZeroTrainingMangaPipeline:
             if clean_lower in CREDIT_KEYWORDS or any(kw in raw_text.lower() for kw in ["asurascans", "asura.gg", "discord.gg", "read at", "fastest releases", "team argo", "teamargo", "euwen"]):
                 continue
 
-            # Check if text contains Asian characters (Korean, Japanese, Chinese)
+            # Check if text contains Asian characters (Korean, Japanese, Chinese) or Cyrillic (Russian)
             has_asian_chars = bool(re.search(r"[\uac00-\ud7a3\u1100-\u11ff\u3040-\u30ff\u4e00-\u9fff]", raw_text))
+            has_cyrillic_chars = bool(re.search(r"[\u0400-\u04ff]", raw_text))
 
             # Ignore standalone noise/SFX boxes with <= 3 chars unless legitimate dialogue
-            if not has_asian_chars:
+            if not has_asian_chars and not has_cyrillic_chars:
                 alpha_only = re.sub(r"[^A-Za-z]", "", raw_text).upper()
                 if len(alpha_only) <= 3 and alpha_only not in VALID_SHORT_WORDS:
                     # E.g. APE, AA, TS, RD, PR, TL, 05, 3H, 10, OyO, +, etc.
@@ -277,6 +362,19 @@ class ZeroTrainingMangaPipeline:
             h, w = new_h, new_w
         bubble_data = []
 
+        # Detect language from image path or context if auto
+        detected_lang = source_lang
+        if detected_lang == "auto":
+            img_path_str = str(image_path).lower()
+            if any(k in img_path_str for k in ["newxtoon", "toptoon", "naver", "daum", "lezhin", "_kr", "korean"]):
+                detected_lang = "kr"
+            elif any(k in img_path_str for k in ["mangalib", "remanga", "readmanga", "_ru", "russian"]):
+                detected_lang = "ru"
+            elif any(k in img_path_str for k in ["colamanga", "baozimh", "bilibili", "_cn", "chinese"]):
+                detected_lang = "cn"
+
+        active_ocr = self.get_ocr_engine(detected_lang)
+
         # 1. OCR Text Detection & Grouping
         if dialogues and len(dialogues) > 0 and custom_bboxes:
             bboxes = custom_bboxes
@@ -291,7 +389,7 @@ class ZeroTrainingMangaPipeline:
         else:
             # High-Speed Sliced OCR (Scaled Detection for 2x performance)
             detected_items = []
-            if self.ocr:
+            if active_ocr:
                 try:
                     ocr_results = []
                     if h > 3200:
@@ -308,7 +406,7 @@ class ZeroTrainingMangaPipeline:
 
                             # Fast detection on downscaled slice
                             small_crop = cv2.resize(crop, (int(cw * scale), int(ch * scale)))
-                            res, _ = self.ocr(small_crop)
+                            res, _ = active_ocr(small_crop)
                             if res:
                                 for b, t, s in res:
                                     shifted_b = [[p[0] * inv_scale, (p[1] * inv_scale) + y] for p in b]
@@ -322,13 +420,13 @@ class ZeroTrainingMangaPipeline:
                             scale = 800.0 / float(w)
                             inv_scale = 1.0 / scale
                             small_img = cv2.resize(image_bgr, (800, int(h * scale)))
-                            res, _ = self.ocr(small_img)
+                            res, _ = active_ocr(small_img)
                             if res:
                                 for b, t, s in res:
                                     shifted_b = [[p[0] * inv_scale, p[1] * inv_scale] for p in b]
                                     ocr_results.append((shifted_b, t, s))
                         else:
-                            ocr_results, _ = self.ocr(image_bgr)
+                            ocr_results, _ = active_ocr(image_bgr)
 
                     if ocr_results:
                         detected_items = self._group_ocr_boxes(ocr_results, h, w)
@@ -338,7 +436,7 @@ class ZeroTrainingMangaPipeline:
             if detected_items:
                 bboxes = [item["bbox"] for item in detected_items]
                 src_texts = [item["source_text"] for item in detected_items]
-                th_texts = self._translate_batch_to_thai(src_texts, tone=tone)
+                th_texts = self._translate_batch_to_thai(src_texts, tone=tone, source_lang=detected_lang)
 
                 for i, (item, th_text) in enumerate(zip(detected_items, th_texts)):
                     bubble_data.append({

@@ -247,10 +247,15 @@ class WebMangaCrawler:
                 "title": "Could Not Fetch",
                 "images": [],
                 "count": 0,
-                "error": f"ไม่สามารถเข้าถึงหน้าเว็บได้ ({last_error}) กรุณาตรวจสอบว่า URL ถูกต้อง หรือเปิดดูหน้าเว็บต้นฉบับ",
+                "error": f"ไม่สามารถเข้าถึงหน้าเว็บได้ ({last_error}) กรุณาตรวจสอบว่า URL ถูกต้อง หรือเปิดดูหน้าเว็บต้นฉบับ หรือใช้งาน Local Server",
             }
 
+        return self.extract_manga_images_from_html(html, page_url)
+
+    def extract_manga_images_from_html(self, html: str, page_url: str = "") -> Dict[str, Any]:
+        """Extracts all manga page image URLs from raw HTML source string."""
         soup = BeautifulSoup(html, "html.parser")
+        title = "Online Manga Reader"
         if soup.title and soup.title.string:
             title = soup.title.string.strip()
 
@@ -261,7 +266,7 @@ class WebMangaCrawler:
             url = url.strip()
             if not url or url in seen_urls:
                 return
-            abs_url = urljoin(page_url, url)
+            abs_url = urljoin(page_url, url) if page_url else url
             if abs_url in seen_urls:
                 return
             if not self._is_valid_manga_image(abs_url):
@@ -308,16 +313,24 @@ class WebMangaCrawler:
 
         # Prioritize chapter/page images over thumbnails
         chapter_images = [u for u in found_images if any(
-            kw in u.lower() for kw in ["chapter", "/manga/", "/webtoon/", "/comic/", "cdn", "storage"]
+            kw in u.lower() for kw in ["chapter", "/manga/", "/webtoon/", "/comic/", "cdn", "storage", "quicksharefiles"]
         )]
         if len(chapter_images) >= 3:
             found_images = chapter_images
 
         # Heuristic: Real manga pages are usually > 500px tall; filter very small images
-        # We do this by filtering URLs that contain "thumb" or "mini" or small dimension hints
         large_images = [u for u in found_images if not any(
             x in u.lower() for x in ["thumb", "mini", "small", "50x", "100x", "150x", "200x"]
         )]
+        if len(large_images) >= 2:
+            found_images = large_images
+
+        return {
+            "source_url": page_url,
+            "title": title,
+            "images": found_images,
+            "count": len(found_images),
+        }
         if len(large_images) >= 2:
             found_images = large_images
 
