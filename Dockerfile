@@ -28,7 +28,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
     rapidocr_onnxruntime \
     opencv-python-headless \
     wordsegment \
-    qrcode[pil]
+    qrcode[pil] \
+    beautifulsoup4 \
+    lxml
 
 # Copy application files
 COPY --chown=user:user . .
