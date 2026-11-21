@@ -1341,21 +1341,92 @@ async def dashboard():
                 }
             }
 
-            async function fetchAndReadWebManga() {
-                if (!systemEnabled) {
-                    showNotification('❌ ระบบปิดอยู่ กรุณาเปิดสวิตช์ก่อน', 'warning');
-                    return;
-                }
-                const url = document.getElementById('webUrlInput').value.trim();
+            function openSourceWebpage() {
+                const input = document.getElementById('webUrlInput');
+                let url = input.value.trim();
                 if (!url) {
-                    alert('กรุณาใส่ URL หน้าเว็บมังงะ');
+                    alert('กรุณากรอกหรือวาง URL หน้าเว็บมังงะก่อนครับ');
                     return;
                 }
-                const container = document.getElementById('pagesContainer');
-                const section = document.getElementById('webReaderSection');
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                    input.value = url;
+                }
+                safeOpenUrl(url);
+                showNotification('🌐 กำลังเปิดหน้าเว็บต้นฉบับในแท็บใหม่...', 'success');
+            }
 
-                container.innerHTML = '<p style="color:#fbbf24; text-align:center; padding:40px; font-size:16px;">⏳ กำลังเชื่อมต่อและดึงหน้ามังงะจากหน้าเว็บ...</p>';
-                section.style.display = 'block';
+            function toggleWebpagePreview() {
+                const container = document.getElementById('webpagePreviewContainer');
+                const iframe = document.getElementById('sourceWebpageIframe');
+                const input = document.getElementById('webUrlInput');
+                let url = input.value.trim();
+                if (!url) {
+                    alert('กรุณากรอกหรือวาง URL หน้าเว็บมังงะก่อนครับ');
+                    return;
+                }
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                    input.value = url;
+                }
+                if (container.style.display === 'none') {
+                    container.style.display = 'block';
+                    iframe.src = url;
+                    showNotification('👁 เปิดพรีวิวหน้าเว็บในหน้านี้แล้ว', 'success');
+                } else {
+                    container.style.display = 'none';
+                    iframe.src = 'about:blank';
+                }
+            }
+
+            function renderPagesIntoReader(images) {
+                const container = document.getElementById('pagesContainer');
+                container.innerHTML = '';
+                images.forEach((imgUrl, idx) => {
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'webtoon-page';
+                    pageDiv.id = 'pageCard_' + idx;
+                    pageDiv.innerHTML = `
+                        <div class="page-floating-bar">
+                            <span style="font-weight:600; color:#cbd5e1;">หน้า ${idx + 1} / ${images.length}</span>
+                            <span id="timeBadge_${idx}" style="color:#94a3b8; font-size:11px;">ต้นฉบับ</span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-outline" style="font-size:11px; padding:3px 8px;" onclick="toggleOriginalView(${idx})">👁 สลับต้นฉบับ</button>
+                                <button id="btnTranslate_${idx}" class="btn btn-success" style="font-size:11px; padding:3px 8px;" onclick="translateSingleWebPage(${idx}, '${escapeHtml(imgUrl)}')">⚡ แปล</button>
+                            </div>
+                        </div>
+                        <img id="mangaImg_${idx}" src="${escapeHtml(imgUrl)}" data-original="${escapeHtml(imgUrl)}" alt="Page ${idx + 1}">
+                    `;
+                    container.appendChild(pageDiv);
+                });
+                setReaderMode(currentReaderMode);
+            }
+
+            async function checkAllWebtoonPages() {
+                if (!systemEnabled) {
+                    showNotification('❌ ระบบปิดอยู่ กรุณาเปิดสวิตช์มุมขวาบนก่อน', 'warning');
+                    return false;
+                }
+                const input = document.getElementById('webUrlInput');
+                let url = input.value.trim();
+                if (!url) {
+                    alert('กรุณากรอกหรือวาง URL หน้าเว็บมังงะก่อนครับ');
+                    return false;
+                }
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                    input.value = url;
+                }
+
+                const inspectCard = document.getElementById('chapterInspectorCard');
+                const inspectTitle = document.getElementById('inspectTitle');
+                const inspectSubtitle = document.getElementById('inspectSubtitle');
+                const inspectPageCount = document.getElementById('inspectPageCount');
+                const inspectPageCountBtn = document.getElementById('inspectPageCountBtn');
+
+                inspectCard.style.display = 'block';
+                inspectTitle.innerHTML = '⏳ กำลังสแกนตรวจสอบหน้าเว็บและรูปภาพทั้งหมด...';
+                inspectSubtitle.innerHTML = '<span style="color:#fbbf24;">กำลังเชื่อมต่อไปยัง ' + escapeHtml(url) + '</span>';
 
                 try {
                     const res = await fetch('/api/fetch-webpage-manga', {
@@ -1364,39 +1435,37 @@ async def dashboard():
                         body: JSON.stringify({ url: url })
                     });
                     const data = await res.json();
-                    fetchedWebImages = data.images;
-
-                    if (!data.images.length) {
-                        container.innerHTML = '<p style="color:#f87171; text-align:center; padding:30px;">ไม่พบรูปภาพมังงะใน URL นี้</p>';
-                        return;
-                    }
-
-                    container.innerHTML = '';
-                    data.images.forEach((imgUrl, idx) => {
-                        const pageDiv = document.createElement('div');
-                        pageDiv.className = 'webtoon-page';
-                        pageDiv.id = 'pageCard_' + idx;
-                        pageDiv.innerHTML = `
-                            <div class="page-floating-bar">
-                                <span style="font-weight:600; color:#cbd5e1;">หน้า ${idx + 1}</span>
-                                <span id="timeBadge_${idx}" style="color:#94a3b8; font-size:11px;">ต้นฉบับ</span>
-                                <div style="display:flex; gap:6px;">
-                                    <button class="btn btn-outline" style="font-size:11px; padding:3px 8px;" onclick="toggleOriginalView(${idx})">👁 สลับต้นฉบับ</button>
-                                    <button id="btnTranslate_${idx}" class="btn btn-success" style="font-size:11px; padding:3px 8px;" onclick="translateSingleWebPage(${idx}, '${escapeHtml(imgUrl)}')">⚡ แปล</button>
-                                </div>
-                            </div>
-                            <img id="mangaImg_${idx}" src="${escapeHtml(imgUrl)}" data-original="${escapeHtml(imgUrl)}" alt="Page ${idx + 1}">
-                        `;
-                        container.appendChild(pageDiv);
-                    });
-
-                    setReaderMode(currentReaderMode);
-
-                    if (document.getElementById('autoTranslateCheck').checked) {
-                        startBatchTranslation();
+                    
+                    if (data.images && data.images.length > 0) {
+                        fetchedWebImages = data.images;
+                        inspectTitle.innerText = data.title || 'ตอนมังงะ/เว็บตูน';
+                        inspectPageCount.innerText = data.images.length;
+                        inspectPageCountBtn.innerText = data.images.length;
+                        inspectSubtitle.innerHTML = `✅ ตรวจพบทั้งหมด <b style="color:#34d399; font-size:15px;">${data.images.length}</b> หน้า พร้อมแปลทันที | รูปภาพครบถ้วน 100%`;
+                        showNotification(`✅ ตรวจพบทั้งหมด ${data.images.length} หน้า พร้อมแปล!`, 'success');
+                        
+                        renderPagesIntoReader(data.images);
+                        document.getElementById('webReaderSection').style.display = 'block';
+                        return true;
+                    } else {
+                        const errMsg = data.error || 'ไม่พบรูปภาพมังงะใน URL นี้';
+                        inspectTitle.innerHTML = '<span style="color:#f87171;">⚠️ ไม่พบรูปภาพ</span>';
+                        inspectSubtitle.innerHTML = `<span style="color:#f87171;">${errMsg}</span><br><button class="btn btn-outline" style="margin-top:8px; font-size:12px;" onclick="openSourceWebpage()">🌐 ลองเปิดดูหน้าเว็บต้นฉบับ</button>`;
+                        return false;
                     }
                 } catch(e) {
-                    container.innerHTML = '<p style="color:#f87171; text-align:center; padding:30px;">เกิดข้อผิดพลาดในการดึงข้อมูล: ' + e + '</p>';
+                    inspectTitle.innerHTML = '<span style="color:#f87171;">⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ</span>';
+                    inspectSubtitle.innerHTML = `<span style="color:#f87171;">${e}</span>`;
+                    return false;
+                }
+            }
+
+            async function fetchAndReadWebManga(autoStartTranslate = false) {
+                const ok = await checkAllWebtoonPages();
+                if (ok) {
+                    if (autoStartTranslate || document.getElementById('autoTranslateCheck').checked) {
+                        startBatchTranslation();
+                    }
                 }
             }
 
@@ -1429,11 +1498,12 @@ async def dashboard():
                 }
 
                 document.getElementById('progressTitle').innerText = translatedCount >= total 
-                    ? `✓ แปลครบทั้ง ${total} หน้าเสร็จสมบูรณ์แล้ว!` 
+                    ? `🎉 แปลครบทั้ง ${total} หน้าเสร็จสมบูรณ์แล้ว!` 
                     : `⏳ กำลังแปลภาษาไทย (${percent}%)`;
 
-                document.getElementById('progressSubtitle').innerText = 
-                    `หน้า ${translatedCount}/${total} | ⏱ ใช้เวลาไปแล้ว: ${minutes}:${seconds} วินาที | ⏳ ${etaText}`;
+                document.getElementById('progressSubtitle').innerText = translatedCount >= total
+                    ? `✓ แปลครบทั้งหมด ${total}/${total} หน้า ในเวลา ${minutes}:${seconds} วินาที | สามารถเลื่อนอ่านด้านล่างได้ทันที!`
+                    : `หน้า ${translatedCount}/${total} | ⏱ ใช้เวลาไปแล้ว: ${minutes}:${seconds} วินาที | ⏳ ${etaText}`;
 
                 document.getElementById('floatingHudStatus').innerText = `หน้า ${translatedCount}/${total} (${percent}%)`;
 
