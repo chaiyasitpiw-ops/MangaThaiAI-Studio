@@ -182,10 +182,16 @@ class ZeroTrainingMangaPipeline:
             if clean_lower in CREDIT_KEYWORDS or any(kw in raw_text.lower() for kw in ["asurascans", "asura.gg", "discord.gg", "read at", "fastest releases", "team argo", "teamargo", "euwen"]):
                 continue
 
+            # Check if text contains Asian characters (Korean, Japanese, Chinese)
+            has_asian_chars = bool(re.search(r"[\uac00-\ud7a3\u1100-\u11ff\u3040-\u30ff\u4e00-\u9fff]", raw_text))
+
             # Ignore standalone noise/SFX boxes with <= 3 chars unless legitimate dialogue
-            alpha_only = re.sub(r"[^A-Za-z]", "", raw_text).upper()
-            if len(alpha_only) <= 3 and alpha_only not in VALID_SHORT_WORDS:
-                # E.g. APE, AA, TS, RD, PR, TL, 05, 3H, 10, OyO, +, etc.
+            if not has_asian_chars:
+                alpha_only = re.sub(r"[^A-Za-z]", "", raw_text).upper()
+                if len(alpha_only) <= 3 and alpha_only not in VALID_SHORT_WORDS:
+                    # E.g. APE, AA, TS, RD, PR, TL, 05, 3H, 10, OyO, +, etc.
+                    continue
+            elif len(raw_text.strip()) < 1:
                 continue
 
             xs = [p[0] for p in b]

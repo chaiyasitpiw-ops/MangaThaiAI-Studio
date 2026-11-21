@@ -122,12 +122,18 @@
 
     // Translate all images
     document.getElementById("mangathai-translate-all").onclick = async () => {
+        // Collect manga/webtoon images including lazy-loaded and reader-page elements
         const images = Array.from(document.querySelectorAll("img")).filter(img => {
-            return img.width > 200 && img.height > 200 && !hud.contains(img);
+            if (hud.contains(img)) return false;
+            const src = (img.currentSrc || img.src || img.getAttribute("data-src") || img.getAttribute("data-lazy-src") || "").toLowerCase();
+            const isReaderCls = img.classList.contains("reader-page") || img.hasAttribute("data-reader-image") || img.closest(".reader-page, #reader, .chapter-images, .comic-view, .read-container");
+            const isChapterKw = src.includes("chapter") || src.includes("manga") || src.includes("webtoon") || src.includes("comic") || src.includes("storage");
+            const isLarge = (img.width > 200 || img.naturalWidth > 200 || img.height > 200);
+            return isReaderCls || isChapterKw || isLarge;
         });
 
         if (!images.length) {
-            statusEl.innerHTML = `<span style="color:#f87171;">ไม่พบรูปภาพมังงะขนาดใหญ่ในหน้านี้</span>`;
+            statusEl.innerHTML = `<span style="color:#f87171;">ไม่พบรูปภาพมังงะในหน้านี้ (หากมี lazy-load ให้ลองเลื่อนจอลงมาเล็กน้อย)</span>`;
             return;
         }
 

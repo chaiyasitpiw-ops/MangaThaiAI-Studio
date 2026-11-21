@@ -34,8 +34,8 @@ USER_AGENTS = [
 DEFAULT_HEADERS = {
     "User-Agent": USER_AGENTS[0],
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "ja,en-US,en;q=0.9,th;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "ko-KR,ko;q=0.9,ja-JP,ja;q=0.8,en-US,en;q=0.7,th-TH,th;q=0.6",
+    "Accept-Encoding": "gzip, deflate",
     "Cache-Control": "no-cache",
     "Pragma": "no-cache",
     "Sec-Fetch-Dest": "document",
@@ -154,6 +154,15 @@ class WebMangaCrawler:
         Extracts all manga page image URLs from a given webpage URL.
         Handles: direct image links, HTML manga chapter pages, MangaDex API, JSON-embedded images.
         """
+        # Normalize and clean input URL
+        page_url = (page_url or "").strip()
+        # Remove invisible unicode characters and line breaks
+        page_url = re.sub(r"[\s\u200b\u200e\u200f\ufeff]+", "", page_url)
+        if not page_url:
+            return {"source_url": "", "title": "Empty URL", "images": [], "count": 0, "error": "URL ว่างเปล่า กรุณากรอก URL"}
+        if not page_url.startswith(("http://", "https://")):
+            page_url = "https://" + page_url
+
         # Direct image URL passthrough
         parsed = urlparse(page_url)
         path_lower = parsed.path.lower()
@@ -170,6 +179,7 @@ class WebMangaCrawler:
         html = ""
         title = "Online Manga Reader"
 
+        last_error = ""
         for ua_index, ua in enumerate(USER_AGENTS):
             headers = dict(DEFAULT_HEADERS)
             headers["User-Agent"] = ua
@@ -183,15 +193,24 @@ class WebMangaCrawler:
                         html = resp.text
                         break
                     elif resp.status_code in (403, 503):
+                        last_error = f"Bot protection ({resp.status_code})"
                         logger.warning(f"Bot protection on attempt {ua_index+1} ({resp.status_code}) for {page_url}")
                         continue
+                    else:
+                        last_error = f"HTTP {resp.status_code}"
             except Exception as e:
+                last_error = str(e)
                 logger.warning(f"Fetch attempt {ua_index+1} failed: {e}")
                 continue
 
         if not html:
-            return {"source_url": page_url, "title": "Could Not Fetch", "images": [], "count": 0,
-                    "error": "Site is Cloudflare-protected or unreachable. Try opening in browser and use the Bookmarklet instead."}
+            return {
+                "source_url": page_url,
+                "title": "Could Not Fetch",
+                "images": [],
+                "count": 0,
+                "error": f"ไม่สามารถเข้าถึงหน้าเว็บได้ ({last_error}) กรุณาตรวจสอบว่า URL ถูกต้อง หรือเปิดดูหน้าเว็บต้นฉบับ",
+            }
 
         soup = BeautifulSoup(html, "html.parser")
         if soup.title and soup.title.string:
@@ -212,9 +231,9 @@ class WebMangaCrawler:
             seen_urls.add(abs_url)
             found_images.append(abs_url)
 
-        # Strategy 1: Standard <img> tags (src, data-src, data-lazy-src, data-original)
+        # Strategy 1: Standard <img> tags (src, data-src, data-lazy-src, data-original, data-cfsrc, data-url)
         for img in soup.find_all("img"):
-            for attr in ["data-src", "data-lazy-src", "data-original", "data-cfsrc", "src"]:
+            for attr in ["data-src", "data-lazy-src", "data-original", "data-cfsrc", "data-url", "data-full-url", "data-reader-image", "src"]:
                 val = img.get(attr)
                 if val:
                     add_image(val)
@@ -275,7 +294,14 @@ class WebMangaCrawler:
         """Downloads image bytes from URL with proper Referer headers to bypass hotlinking protection."""
         headers = dict(DEFAULT_HEADERS)
         parsed = urlparse(image_url)
-        headers["Referer"] = referer or f"{parsed.scheme}://{parsed.netloc}/"
+        if not referer:
+            if "quicksharefiles" in parsed.netloc or "newxtoon" in image_url:
+                referer = "https://newxtoon5.com/"
+            elif "asura" in parsed.netloc:
+                referer = "https://asurascans.com/"
+            else:
+                referer = f"{parsed.scheme}://{parsed.netloc}/"
+        headers["Referer"] = referer
         headers["Accept"] = "image/webp,image/apng,image/*,*/*;q=0.8"
         # Remove browser-specific headers for image requests
         for k in ["Sec-Fetch-Dest", "Sec-Fetch-Mode", "Upgrade-Insecure-Requests"]:
