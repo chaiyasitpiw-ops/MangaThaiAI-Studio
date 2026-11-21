@@ -92,10 +92,10 @@ async def dashboard():
         <link rel="manifest" href="/static/manifest.json">
         <link rel="apple-touch-icon" href="/static/icon-192.png">
         <title>MangaThaiAI-Studio | Real-Time Manga & Webtoon Studio</title>
-        <!-- Google Fonts: Mali (Comic), Kanit (Action), Chakra Petch (Gaming Status) -->
+        <!-- Google Fonts: Mali (Comic), Kanit (Action), Chakra Petch (Gaming Status), Prompt (UI) -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Kanit:wght@400;600;700&family=Mali:wght@500;600;700&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Kanit:wght@400;600;700&family=Mali:wght@500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
             :root {
                 --primary: #6366f1;
@@ -119,7 +119,6 @@ async def dashboard():
                 padding: 20px;
                 padding-bottom: 80px;
                 line-height: 1.5;
-                /* iOS safe area */
                 padding-left: max(20px, env(safe-area-inset-left));
                 padding-right: max(20px, env(safe-area-inset-right));
                 padding-bottom: max(80px, env(safe-area-inset-bottom));
@@ -148,7 +147,7 @@ async def dashboard():
             }
             .tabs {
                 display: flex;
-                gap: 10px;
+                gap: 8px;
                 margin-bottom: 20px;
                 border-bottom: 1px solid var(--card-border);
                 padding-bottom: 8px;
@@ -169,7 +168,10 @@ async def dashboard():
                 font-family: 'Prompt', sans-serif;
                 transition: all 0.2s;
                 white-space: nowrap;
-                min-height: 44px; /* iOS touch target */
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
             }
             .tab-btn.active {
                 background: var(--card);
@@ -182,8 +184,8 @@ async def dashboard():
             .card {
                 background: var(--card);
                 border: 1px solid var(--card-border);
-                border-radius: 12px;
-                padding: 20px;
+                border-radius: 14px;
+                padding: 22px;
                 margin-bottom: 20px;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             }
@@ -198,6 +200,7 @@ async def dashboard():
             }
             .badge-online { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
             .badge-fast { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+            
             .btn {
                 background: var(--primary);
                 color: white;
@@ -211,8 +214,9 @@ async def dashboard():
                 transition: all 0.2s;
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 gap: 6px;
-                min-height: 44px; /* iOS touch target */
+                min-height: 44px;
                 -webkit-tap-highlight-color: transparent;
             }
             .btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
@@ -237,6 +241,54 @@ async def dashboard():
                 min-height: 44px;
             }
             .input-text:focus, select.input-text:focus { border-color: var(--primary); }
+
+            /* Tag Pills */
+            .tag-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: #090d16;
+                border: 1px solid #334155;
+                color: #cbd5e1;
+                padding: 6px 14px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 500;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .tag-pill:hover {
+                border-color: #6366f1;
+                color: #fff;
+                background: #1e1b4b;
+                transform: translateY(-1px);
+            }
+
+            /* Step Cards for iOS & Deploy Guides */
+            .step-card {
+                background: #090d16;
+                border: 1px solid #1e293b;
+                border-radius: 12px;
+                padding: 18px;
+                position: relative;
+                transition: all 0.2s;
+            }
+            .step-card:hover { border-color: #38bdf8; transform: translateY(-2px); }
+            .step-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: #6366f1;
+                color: #fff;
+                font-weight: 700;
+                font-size: 13px;
+                margin-right: 8px;
+                flex-shrink: 0;
+            }
 
             /* Webtoon Reader Layout */
             #readerStreamWrapper {
@@ -382,17 +434,60 @@ async def dashboard():
             body.theater-mode .power-toggle { opacity: 0.3; transition: 0.2s; }
             body.theater-mode .power-toggle:hover { opacity: 1; }
 
-            /* Mobile optimizations */
-            @media (max-width: 600px) {
-                body { padding: 12px; padding-bottom: 80px; }
+            /* Mobile Bottom Navigation Dock */
+            .mobile-bottom-nav {
+                display: none;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(15, 23, 42, 0.94);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border-top: 1px solid #1e293b;
+                padding: 6px 12px;
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+                z-index: 150;
+                justify-content: space-around;
+                align-items: center;
+            }
+            .mobile-nav-btn {
+                background: transparent;
+                border: none;
+                color: #94a3b8;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 3px;
+                font-size: 11px;
+                font-weight: 600;
+                font-family: 'Prompt', sans-serif;
+                cursor: pointer;
+                padding: 6px 12px;
+                border-radius: 8px;
+                transition: all 0.2s;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .mobile-nav-btn.active {
+                color: #38bdf8;
+                background: rgba(56, 189, 248, 0.1);
+            }
+            .mobile-nav-icon {
+                font-size: 20px;
+                line-height: 1;
+            }
+
+            /* Responsive rules */
+            @media (max-width: 768px) {
+                .mobile-bottom-nav { display: flex; }
+                body { padding: 12px; padding-bottom: calc(75px + env(safe-area-inset-bottom)) !important; }
+                .tabs { display: none !important; }
                 h1 { font-size: 18px !important; }
-                .card { padding: 14px; }
-                .tabs { gap: 6px; padding-bottom: 6px; }
-                .tab-btn { padding: 8px 12px; font-size: 12px; }
+                .card { padding: 16px; }
                 #readerStreamWrapper { max-width: 100% !important; }
                 .floating-hud { width: calc(100% - 32px); border-radius: 16px; padding: 10px 14px; }
                 #floatingSideNav { display: none !important; }
-                select.input-text, .input-text { font-size: 16px; } /* Prevent iOS zoom */
+                select.input-text, .input-text { font-size: 16px; }
             }
         </style>
     </head>
@@ -414,15 +509,16 @@ async def dashboard():
                 <div style="display:flex; align-items:flex-start; gap:12px;">
                     <span style="font-size:28px;">📱</span>
                     <div>
-                        <b style="color:#a5b4fc; font-size:14px;">ติดตั้งแอปบน iPhone/iPad ของคุณ!</b>
+                        <b style="color:#a5b4fc; font-size:14px;">ติดตั้งเป็นแอปบน iPhone/iPad ของคุณ!</b>
                         <p style="margin:4px 0 0; font-size:12px; color:#94a3b8; line-height:1.6;">
-                            กด <b style="color:#fff;">Share</b> (ไอคอนกล่องลูกศรขึ้น) → เลือก <b style="color:#fff;">"Add to Home Screen"</b><br>
-                            → คุณจะได้ไอคอน ⚡ MangaThaiAI บนหน้าจอหลัก พร้อมใช้งานแบบแอปเต็มหน้าจอ!
+                            กดปุ่ม <b style="color:#fff;">Share</b> (กล่องลูกศรขึ้น) ใน Safari → เลือก <b style="color:#fff;">"Add to Home Screen"</b><br>
+                            → ใช้งานแบบแอปเต็มหน้าจอ ไร้แถบ URL กวนใจ!
                         </p>
                     </div>
                     <button onclick="document.getElementById('iosBanner').style.display='none'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;padding:0;min-height:auto;">✕</button>
                 </div>
             </div>
+
             <header>
                 <div class="header-title">
                     <span class="logo-icon">⚡</span>
@@ -435,36 +531,44 @@ async def dashboard():
                 </div>
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                     <span class="badge badge-fast">⚡ Sliced OCR 2.0 (เร่งสปีด 2 เท่า)</span>
-                    <span class="badge badge-online">● Laptop Control Center</span>
+                    <span class="badge badge-online">● Cloud Server Active</span>
                 </div>
             </header>
 
-            <!-- Navigation Tabs -->
+            <!-- Desktop Category Tabs Navigation -->
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('tab-webreader')">🌐 โหมดอ่านและแปลเว็บตูน (Webtoon Reader)</button>
-                <button class="tab-btn" onclick="switchTab('tab-fonts')">🎨 ตัวอย่างฟอนต์การ์ตูน & บอลลูน (Font Gallery)</button>
-                <button class="tab-btn" onclick="switchTab('tab-bookmarklet')">📌 บุ๊กมาร์กแปลสด (Bookmarklet)</button>
-                <button class="tab-btn" onclick="switchTab('tab-showcase')">🎭 เทียบสำนวนมังงะ (Natural vs Stiff)</button>
+                <button class="tab-btn active" data-tab="tab-webreader" onclick="switchTab('tab-webreader')">📖 อ่านมังงะ (Manga Reader)</button>
+                <button class="tab-btn" data-tab="tab-settings" onclick="switchTab('tab-settings')">🎨 ฟอนต์ & ปรับแต่ง (Preferences)</button>
+                <button class="tab-btn" data-tab="tab-ios" onclick="switchTab('tab-ios')">📱 iPhone / iPad (iOS App)</button>
+                <button class="tab-btn" data-tab="tab-deploy" onclick="switchTab('tab-deploy')">🚀 วิธี Deploy เอง (Self-Deploy)</button>
             </div>
 
-            <!-- ================= TAB 1: WEB READER ================= -->
+            <!-- ================= CATEGORY 1: WEB READER ================= -->
             <div id="tab-webreader" class="tab-content">
-                <!-- Input Card -->
+                <!-- Input Hero Card -->
                 <div id="webUrlCard" class="card">
                     <h2 style="margin-top:0; font-size:17px; display:flex; align-items:center; gap:8px;">
-                        <span>🌐</span> วาง URL ตอนมังงะ/เว็บตูนเพื่อแปลและอ่านเป็นภาษาไทยทันที
+                        <span>📖</span> วาง URL ตอนมังงะ/เว็บตูนเพื่อแปลและอ่านเป็นภาษาไทยทันที
                     </h2>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <input type="text" id="webUrlInput" class="input-text" style="flex:1; min-width:300px;" 
-                               placeholder="ตัวอย่าง: https://asurascans.com/comics/overgeared-1bb35e56/chapter/343">
+                        <input type="text" id="webUrlInput" class="input-text" style="flex:1; min-width:280px;" 
+                               placeholder="วาง URL เช่น https://asurascans.com/comics/overgeared-1bb35e56/chapter/343">
                         <button class="btn btn-success" onclick="fetchAndReadWebManga()">
                             🚀 ดึงข้อมูล & เปิดอ่าน
                         </button>
                     </div>
 
-                    <!-- Reader Preferences Bar -->
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #1e293b;">
-                        <!-- Font Selection -->
+                    <!-- Quick Shortcuts / Tag Pills -->
+                    <div style="margin-top:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:12px; color:var(--text-muted); font-weight:600;">⚡ ตอนทดสอบด่วน:</span>
+                        <a class="tag-pill" onclick="loadQuickUrl('overgeared')">⚡ Overgeared ตอน 343 (Asura)</a>
+                        <a class="tag-pill" onclick="loadQuickUrl('sololeveling')">⚔️ Solo Leveling</a>
+                        <a class="tag-pill" onclick="loadQuickUrl('onepiece')">🏴‍☠️ One Piece</a>
+                        <a class="tag-pill" onclick="loadQuickUrl('demo')">🧪 ภาพทดสอบระบบ Demo</a>
+                    </div>
+
+                    <!-- Compact Reader Preferences Bar -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #1e293b;">
                         <div>
                             <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎨 ฟอนต์ตัวอักษร:</label>
                             <select id="fontFamilySelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
@@ -473,23 +577,19 @@ async def dashboard():
                                 <option value="chakrapetch">🎮 Chakra Petch (ระบบเกม/สเตตัส ล้ำยุค)</option>
                             </select>
                         </div>
-
-                        <!-- Backdrop / Bubble Mode -->
                         <div>
                             <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">✨ รูปแบบพื้นหลังบอลลูน:</label>
                             <select id="backdropModeSelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
-                                <option value="natural" selected>🎨 ลายเส้นมังงะแท้ 100% (ไร้กรอบ ไร้เหลี่ยม สะอาดตา [แนะนำ])</option>
+                                <option value="natural" selected>🎨 ลายเส้นมังงะแท้ 100% (ไร้กรอบ ไร้เหลี่ยม [แนะนำ])</option>
                                 <option value="soft_white">⚪ รองพื้นขาวนุ่มนวล (Soft White)</option>
                                 <option value="none">✨ ตัวหนังสือเพียวๆ</option>
                             </select>
                         </div>
-
-                        <!-- Manga Tone Preset -->
                         <div>
                             <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎭 โทนสำนวนบทพูด:</label>
                             <select id="globalToneSelect" class="input-text" style="width:100%;" onchange="onSettingChanged()">
                                 <option value="shonen" selected>⚔️ โชเน็น / แอ็กชัน (แก, ข้า, ลุย, ดุดัน)</option>
-                                <option value="shojo">🌸 โรแมนติก / ตาหวาน (นาย, ฉัน, ละมุน ซึนเดเระ)</option>
+                                <option value="shojo">🌸 โรแมนติก / ตาหวาน (นาย, ฉัน, ละมุน)</option>
                                 <option value="seinen">🕵️ สืบสวน / สุขุม (จริงจัง ลุ่มลึก เป็นธรรมชาติ)</option>
                                 <option value="comedy">🤣 การ์ตูนแก๊ก / ตลก (คำสร้อย กวนๆ ฮาๆ)</option>
                             </select>
@@ -501,12 +601,8 @@ async def dashboard():
                             <input type="checkbox" id="autoTranslateCheck" checked> ⚡ แปลภาษาไทยอัตโนมัติทันทีที่เปิดตอน (Auto Stream)
                         </label>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span class="badge" style="background:#064e3b; color:#6ee7b7; font-size:11px;">🛡️ ปิดกั้นโฆษณาเว็บพนัน & ป๊อปอัป 100%</span>
-                        </div>
-                        <div style="font-size:12px; color:var(--text-muted);">
-                            💡 ทางลัดทดสอบด่วน: 
-                            <a href="javascript:void(0)" style="color:#38bdf8; font-weight:600; text-decoration:none;" onclick="loadAsuraUrl()">👉 Overgeared ตอน 343 (Asura Scans)</a> | 
-                            <a href="javascript:void(0)" style="color:#818cf8; text-decoration:none;" onclick="loadTestUrl()">มังงะตัวอย่าง</a>
+                            <span class="badge" style="background:#064e3b; color:#6ee7b7; font-size:11px;">🛡️ ปิดกั้นโฆษณา & ป๊อปอัป 100%</span>
+                            <a href="javascript:void(0)" onclick="switchTab('tab-settings')" style="color:#38bdf8; font-size:12px; text-decoration:none;">🎨 สตูดิโอปรับแต่งฟอนต์ & สำนวน →</a>
                         </div>
                     </div>
                 </div>
@@ -533,7 +629,7 @@ async def dashboard():
                         </div>
                     </div>
 
-                    <!-- Reader Controls Bar (View Mode, Width Slider & Click-Scroll Navigation) -->
+                    <!-- Reader Controls Bar -->
                     <div class="card" style="padding:10px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span style="font-size:13px; font-weight:600; color:#cbd5e1;">📱 จัดวางหน้า:</span>
@@ -543,7 +639,7 @@ async def dashboard():
                         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                             <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:#38bdf8; font-weight:600;" title="คลิกครึ่งบนเพื่อเลื่อนขึ้น / คลิกครึ่งล่างเพื่อเลื่อนลง">
                                 <input type="checkbox" id="clickScrollCheck" checked onchange="toggleClickScroll(this.checked)">
-                                🖱️ โหมดคลิกขึ้น-ลง (คลิกจอด้านบน/ล่าง)
+                                🖱️ คลิกขึ้น-ลง (บน/ล่าง)
                             </label>
                             <div style="display:flex; gap:6px;">
                                 <button class="btn btn-outline" style="font-size:11px; padding:4px 8px;" onclick="scrollUpStep()" title="เลื่อนขึ้น 1 หน้าจอ (ArrowUp / K)">▲ เลื่อนขึ้น</button>
@@ -572,119 +668,336 @@ async def dashboard():
                 <button class="btn btn-outline" style="border-radius:50%; width:44px; height:44px; padding:0; display:flex; align-items:center; justify-content:center; font-size:18px; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); box-shadow:0 4px 15px rgba(0,0,0,0.5);" onclick="scrollDownStep()" title="เลื่อนลง 1 หน้าจอ">▼</button>
             </div>
 
-            <!-- ================= TAB 2: FONT GALLERY ================= -->
-            <div id="tab-fonts" class="tab-content" style="display:none;">
-                <div class="card">
-                    <h2 style="margin-top:0; font-size:18px;">🎨 แกลเลอรีเปรียบเทียบฟอนต์การ์ตูน & บอลลูนคำพูด (Font & Styling Showcase)</h2>
-                    <p style="color:var(--text-muted); font-size:14px;">
-                        ระบบออกแบบมาเพื่อแก้ปัญหาตัวหนังสือแข็งทื่อ ด้วย 3 ฟอนต์ระดับพรีเมียมที่สอดรับกับแต่ละฉากและอารมณ์:
+            <!-- ================= CATEGORY 2: FONTS & SETTINGS ================= -->
+            <div id="tab-settings" class="tab-content" style="display:none;">
+                <!-- Live Interactive Sandbox Card -->
+                <div class="card" style="border:1px solid #6366f1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <h2 style="margin:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+                            <span>🎮</span> กล่องทดลองปรับแต่งสด (Live Interactive Sandbox)
+                        </h2>
+                        <span class="badge" style="background:#1e3a8a; color:#bfdbfe;">อัปเดตตัวอย่างแบบเรียลไทม์</span>
+                    </div>
+                    <p style="color:var(--text-muted); font-size:13px; margin-top:0;">
+                        ปรับแต่งฟอนต์ บอลลูนคำพูด และโทนสำนวน แล้วดูผลลัพธ์ที่จะใช้ในโหมดอ่านมังงะได้ทันที:
                     </p>
 
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:20px;">
-                        <!-- Font 1: Mali Comic -->
-                        <div style="background:#090d16; border:1px solid #334155; border-radius:12px; padding:20px;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:16px;">
+                        <div>
+                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎨 เลือกฟอนต์:</label>
+                            <select id="sandboxFontSelect" class="input-text" style="width:100%;" onchange="updateLivePreview()">
+                                <option value="mali" selected>✍️ Mali Comic (ลายเส้นมังงะแท้ [แนะนำ])</option>
+                                <option value="kanit">⚔️ Kanit Shonen (แอ็กชันดุดัน)</option>
+                                <option value="chakrapetch">🎮 Chakra Petch (กล่องเควสต์ระบบ)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">✨ สไตล์บอลลูนคำพูด:</label>
+                            <select id="sandboxBackdropSelect" class="input-text" style="width:100%;" onchange="updateLivePreview()">
+                                <option value="natural" selected>🎨 ลายเส้นมังงะแท้ (ขอบมน คมชัด)</option>
+                                <option value="soft_white">⚪ รองพื้นขาวนุ่มนวล</option>
+                                <option value="dark_box">⬛ กล่องดำสไตล์ระบบเกม</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">🎭 โทนสำนวนการ์ตูน:</label>
+                            <select id="sandboxToneSelect" class="input-text" style="width:100%;" onchange="updateLivePreview()">
+                                <option value="shonen" selected>⚔️ โชเน็น (แก, ข้า, ลุย!)</option>
+                                <option value="shojo">🌸 ตาหวาน (นาย, ฉัน, ละมุน)</option>
+                                <option value="seinen">🕵️ สุขุม / สืบสวน (จริงจัง ลุ่มลึก)</option>
+                                <option value="comedy">🤣 การ์ตูนแก๊ก (ฮาๆ กวนๆ)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">✍️ ลองพิมพ์ข้อความของคุณเอง (จะแสดงในบอลลูนทันที):</label>
+                        <input type="text" id="sandboxCustomText" class="input-text" style="width:100%;" 
+                               placeholder="พิมพ์ข้อความทดสอบที่นี่... (เช่น เฮ้ย! รอก่อนสิฟะ!)" oninput="updateLivePreview()">
+                    </div>
+
+                    <!-- Live Bubble Sandbox Display -->
+                    <div id="sandboxBubbleDisplay" style="background:#ffffff; color:#0f172a; padding:28px; border-radius:24px; border:3px solid #334155; text-align:center; min-height:110px; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 30px rgba(0,0,0,0.6); transition:all 0.3s ease;">
+                        <div id="sandboxBubbleText" style="font-family:'Mali', cursive; font-size:20px; font-weight:700; line-height:1.4;">
+                            "เฮ้ย! รอก่อนสิฟะ!<br>อย่าเพิ่งไปทางนั้นนะโว้ย!"
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Font Showcase Cards -->
+                <div class="card">
+                    <h2 style="margin-top:0; font-size:18px;">🎨 แกลเลอรีฟอนต์ระดับพรีเมียม (Font Showcase)</h2>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:18px; margin-top:16px;">
+                        <div style="background:#090d16; border:1px solid #334155; border-radius:12px; padding:18px;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b style="color:#6ee7b7; font-size:16px;">1. Mali Comic (ลายเส้นมังงะ)</b>
-                                <span class="badge" style="background:#064e3b; color:#a7f3d0;">ยอดนิยมที่สุด</span>
+                                <b style="color:#6ee7b7; font-size:15px;">1. Mali Comic (ลายเส้นมังงะ)</b>
+                                <span class="badge" style="background:#064e3b; color:#a7f3d0;">ยอดนิยม</span>
                             </div>
-                            <p style="color:var(--text-muted); font-size:13px; margin:8px 0 16px;">
-                                ลายเส้นเขียนมือโค้งมนเป็นธรรมชาติ เข้าถึงอารมณ์ตัวละคร เหมือนเปิดอ่านหนังสือการ์ตูนรวมเล่ม
+                            <p style="color:var(--text-muted); font-size:13px; margin:8px 0 14px;">
+                                โค้งมน เป็นธรรมชาติ ถ่ายทอดอารมณ์เหมือนอ่านรวมเล่มภาษาไทย
                             </p>
-                            <!-- Visual Preview Box -->
-                            <div style="background:#fff; color:#0f172a; padding:16px; border-radius:18px; border:2px solid #334155; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
-                                <div style="font-family:'Mali', cursive; font-size:18px; font-weight:700; line-height:1.4;">
-                                    "เฮ้ย! รอก่อนสิฟะ!<br>อย่าเพิ่งไปทางนั้นนะโว้ย!"
-                                </div>
+                            <div style="background:#fff; color:#0f172a; padding:14px; border-radius:16px; text-align:center;">
+                                <div style="font-family:'Mali', cursive; font-size:17px; font-weight:700;">"รอเดี๋ยวสิ! ฉันยังไม่ได้เริ่มเลยนะ!"</div>
                             </div>
                         </div>
-
-                        <!-- Font 2: Kanit Shonen -->
-                        <div style="background:#090d16; border:1px solid #334155; border-radius:12px; padding:20px;">
+                        <div style="background:#090d16; border:1px solid #334155; border-radius:12px; padding:18px;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b style="color:#60a5fa; font-size:16px;">2. Kanit Shonen (แอ็กชันดุดัน)</b>
-                                <span class="badge" style="background:#1e3a8a; color:#bfdbfe;">เว็บตูนต่อสู้</span>
+                                <b style="color:#60a5fa; font-size:15px;">2. Kanit Shonen (แอ็กชันดุดัน)</b>
+                                <span class="badge" style="background:#1e3a8a; color:#bfdbfe;">มันฮวาต่อสู้</span>
                             </div>
-                            <p style="color:var(--text-muted); font-size:13px; margin:8px 0 16px;">
-                                ตัวหนา คมชัด สไตล์มันฮวาเกาหลีแอ็กชัน (Solo Leveling, Overgeared) ตะโกนลั่นสนามรบ
+                            <p style="color:var(--text-muted); font-size:13px; margin:8px 0 14px;">
+                                ตัวหนา คมชัด สไตล์มันฮวาเกาหลีแอ็กชัน (Solo Leveling, Overgeared)
                             </p>
-                            <div style="background:#fff; color:#0f172a; padding:16px; border-radius:18px; border:2px solid #334155; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
-                                <div style="font-family:'Kanit', sans-serif; font-size:18px; font-weight:700; line-height:1.35;">
-                                    "ข้าไม่ยอมแพ้หรอก!<br>รับดาบเล่มนี้ของข้าไปซะ!"
-                                </div>
+                            <div style="background:#fff; color:#0f172a; padding:14px; border-radius:16px; text-align:center;">
+                                <div style="font-family:'Kanit', sans-serif; font-size:17px; font-weight:700;">"ข้าจะไม่ยอมแพ้ที่นี่เด็ดขาด!"</div>
                             </div>
                         </div>
-
-                        <!-- Font 3: Chakra Petch -->
-                        <div style="background:#090d16; border:1px solid #334155; border-radius:12px; padding:20px;">
+                        <div style="background:#090d16; border:1px solid #334155; border-radius:12px; padding:18px;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b style="color:#fcd34d; font-size:16px;">3. Chakra Petch (กล่องระบบเกม)</b>
+                                <b style="color:#fcd34d; font-size:15px;">3. Chakra Petch (กล่องระบบเกม)</b>
                                 <span class="badge" style="background:#451a03; color:#fde68a;">เควสต์ & สเตตัส</span>
                             </div>
-                            <p style="color:var(--text-muted); font-size:13px; margin:8px 0 16px;">
-                                รูปทรงดิจิทัลไซเบอร์ ใช้แสดงข้อความแจ้งเตือน หน้าต่างสถานะ เควสต์ของราชา
+                            <p style="color:var(--text-muted); font-size:13px; margin:8px 0 14px;">
+                                ดิจิทัลไซเบอร์ สไตล์หน้าต่างสเตตัสและข้อความเควสต์
                             </p>
-                            <div style="background:#0b1221; color:#f8fafc; padding:16px; border-radius:10px; border:2px solid #38bdf8; text-align:center; box-shadow:0 0 20px rgba(56,189,248,0.3);">
-                                <div style="font-family:'Chakra Petch', sans-serif; font-size:16px; font-weight:700; line-height:1.4; color:#38bdf8;">
-                                    [ เควสต์ของราชา (2) : เคลียร์สำเร็จ ]<br>
-                                    <span style="color:#f8fafc; font-size:14px;">ได้รับสูตรสร้างไอเทม: ดาบแห่งราชา!</span>
-                                </div>
+                            <div style="background:#0b1221; color:#38bdf8; padding:14px; border-radius:10px; border:2px solid #38bdf8; text-align:center;">
+                                <div style="font-family:'Chakra Petch', sans-serif; font-size:15px; font-weight:700;">[ เควสต์สำเร็จ : ได้รับดาบแห่งราชา ]</div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tone Comparisons -->
+                <div class="card">
+                    <h2 style="margin-top:0; font-size:18px;">🎭 เทียบสำนวนมังงะแท้ (Natural AI) vs แปลตรงตัวแข็งทื่อ</h2>
+                    <div style="display:flex; flex-direction:column; gap:14px; margin-top:14px;">
+                        <div class="step-card">
+                            <b>Overgeared ตอน 343: ข้อความเควสต์ระบบ</b>
+                            <div style="margin-top:4px; color:#cbd5e1; font-size:13px;">QUEST CLEAR CONDITIONS: GIVE THE NECESSARY HELP TO 5,000 CITIZENS</div>
+                            <div style="margin-top:8px; color:#6ee7b7; font-weight:600;">✅ สำนวนมังงะ: "เงื่อนไขการเคลียร์ภารกิจ: มอบความช่วยเหลือแก่ประชาชน 5,000 คน!"</div>
+                            <div style="margin-top:4px; color:#f87171; font-size:12px;">❌ แปลตรงตัวดั้งเดิม: "เงื่อนไขที่ชัดเจนในการค้นหา: ให้ความช่วยเหลือที่จำเป็นแก่พลเมือง 5,000 คน"</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ================= TAB 3: BOOKMARKLET ================= -->
-            <div id="tab-bookmarklet" class="tab-content" style="display:none;">
+            <!-- ================= CATEGORY 3: IPHONE / IPAD ================= -->
+            <div id="tab-ios" class="tab-content" style="display:none;">
+                <!-- Step-by-Step PWA Installation Guide -->
                 <div class="card">
-                    <h2 style="margin-top:0; font-size:18px;">📌 ติดตั้ง Bookmarklet แปลมังงะสดบนทุกเว็บไซต์ (One-Click In-Browser Translator)</h2>
-                    <p style="color:var(--text-muted); font-size:14px; line-height:1.6;">
-                        คุณสามารถแปลมังงะสดได้โดยตรงขณะเปิดหน้าเว็บมังงะใด ๆ ในโลก เพียงลากปุ่มด้านล่างนี้ไปวางที่แถบบุ๊กมาร์ก (Bookmarks Bar) ของเบราว์เซอร์:
+                    <h2 style="margin-top:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+                        <span>📱</span> ติดตั้งเป็นแอปบน iPhone / iPad (ไม่ต้องผ่าน App Store)
+                    </h2>
+                    <p style="color:var(--text-muted); font-size:13px;">
+                        คุณสามารถเพิ่มเว็บนี้เป็นแอปบนหน้าจอโฮมเพื่อเปิดอ่านแบบเต็มหน้าจอ (Standalone Fullscreen) ได้ทันที:
                     </p>
-                    <div style="background:#090d16; border:2px dashed #4f46e5; border-radius:12px; padding:24px; text-align:center; margin:20px 0;">
-                        <a id="bookmarkletAnchor" 
-                           href="javascript:(function(){var s=document.createElement('script');s.src=(window.location.origin||'http://localhost:8000')+'/static/bookmarklet.js?t='+Date.now();document.body.appendChild(s);})();" 
-                           class="btn btn-success" 
-                           style="font-size:16px; padding:12px 24px; text-decoration:none; display:inline-block; cursor:grab;"
-                           title="ลากปุ่มนี้ไปวางที่ Bookmarks Bar ของเบราว์เซอร์">
-                            📌 แปลมังงะไทยสด (MangaThaiAI)
-                        </a>
-                        <div style="margin-top:16px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-                            <button class="btn btn-outline" style="font-size:12px;" onclick="copyBookmarkletCode()">
-                                📋 คัดลอกโค้ดสำหรับ Safari บน iPhone/iPad
-                            </button>
+
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:16px;">
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:10px;">
+                                <span class="step-badge">1</span>
+                                <b style="color:#fff; font-size:15px;">เปิด Safari บน iPhone/iPad</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                เข้าสู่ URL: <b style="color:#38bdf8;">https://mangathaiai-studio.onrender.com</b> ผ่านเบราว์เซอร์ Safari
+                            </p>
                         </div>
-                        <p style="margin-top:12px; font-size:12px; color:var(--text-muted); line-height:1.6;">
-                            💻 <b>บนคอมพิวเตอร์:</b> คลิกเมาส์ค้างที่ปุ่มสีเขียวแล้วลากไปวางที่แถบบุ๊กมาร์ก (Bookmarks Bar)<br>
-                            📱 <b>บน iPhone / iPad:</b> กดปุ่ม "คัดลอกโค้ด" ด้านบน → ไปที่ Safari บุ๊กมาร์กหน้าเว็บอะไรก็ได้ → กดแก้ไข (Edit Bookmark) → วางโค้ดนี้ลงในช่อง URL
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:10px;">
+                                <span class="step-badge">2</span>
+                                <b style="color:#fff; font-size:15px;">กดปุ่ม Share (แชร์)</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                แตะไอคอน <b style="color:#fff;">Share (กล่องสี่เหลี่ยมลูกศรชี้ขึ้น)</b> ที่แถบเมนูด้านล่างของ Safari
+                            </p>
+                        </div>
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:10px;">
+                                <span class="step-badge">3</span>
+                                <b style="color:#fff; font-size:15px;">Add to Home Screen</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                เลื่อนลงมาเลือก <b style="color:#fff;">"Add to Home Screen"</b> (เพิ่มไปยังหน้าจอโฮม) แล้วกด <b style="color:#10b981;">Add</b>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safari Bookmarklet Section -->
+                <div class="card">
+                    <h2 style="margin-top:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+                        <span>📌</span> บุ๊กมาร์กแปลสดบนทุกเว็บมังงะ (In-Browser Bookmarklet)
+                    </h2>
+                    <p style="color:var(--text-muted); font-size:13px; line-height:1.6;">
+                        กดแปลหน้าเว็บมังงะใดๆ ในโลกได้ทันทีขณะเปิดดูเว็บนั้น เพียงคัดลอกโค้ด Bookmarklet ด้านล่างนี้:
+                    </p>
+                    <div style="background:#090d16; border:2px dashed #4f46e5; border-radius:12px; padding:22px; text-align:center; margin:16px 0;">
+                        <button class="btn btn-success" style="font-size:15px; padding:12px 24px;" onclick="copyBookmarkletCode()">
+                            📋 กดเพื่อคัดลอกโค้ด Bookmarklet (1-Click Copy)
+                        </button>
+                        <p style="margin-top:14px; font-size:12px; color:var(--text-muted); line-height:1.6; max-width:600px; margin-left:auto; margin-right:auto;">
+                            💡 <b>วิธีใส่ใน Safari:</b> บุ๊กมาร์กหน้าอะไรก็ได้ใน Safari → กดแก้ไข (Edit) → เปลี่ยนชื่อเป็น "⚡ แปลมังงะไทย" → วางโค้ดที่คัดลอกนี้ลงในช่อง URL
                         </p>
                     </div>
                 </div>
+
+                <!-- Mobile Touch Gestures -->
+                <div class="card">
+                    <h2 style="margin-top:0; font-size:18px;">👆 เคล็ดลับการควบคุมบนหน้าจอสัมผัส (Touch Navigation)</h2>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-top:14px;">
+                        <div class="step-card">
+                            <b style="color:#38bdf8;">▲ แตะครึ่งบนของจอ</b>
+                            <p style="color:#94a3b8; font-size:13px; margin:4px 0 0;">เลื่อนขึ้น 1 หน้าจออัตโนมัติ ไม่ต้องคอยปัดนิ้วบ่อยๆ</p>
+                        </div>
+                        <div class="step-card">
+                            <b style="color:#38bdf8;">▼ แตะครึ่งล่างของจอ</b>
+                            <p style="color:#94a3b8; font-size:13px; margin:4px 0 0;">เลื่อนลง 1 หน้าจอ เหมาะสำหรับการอ่านตอนนอนหรือมือเดียว</p>
+                        </div>
+                        <div class="step-card">
+                            <b style="color:#38bdf8;">▶ ปุ่มออโต้สกรอลล์</b>
+                            <p style="color:#94a3b8; font-size:13px; margin:4px 0 0;">ให้หน้าเว็บค่อยๆ ไหลลงมาแบบสบายตา ปรับความเร็วได้</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- ================= TAB 4: SHOWCASE ================= -->
-            <div id="tab-showcase" class="tab-content" style="display:none;">
+            <!-- ================= CATEGORY 4: SELF-DEPLOY GUIDE ================= -->
+            <div id="tab-deploy" class="tab-content" style="display:none;">
+                <!-- Deploy Overview -->
+                <div class="card" style="border:1px solid #10b981;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                        <h2 style="margin:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+                            <span>🚀</span> วิธี Deploy และอัปเดตระบบด้วยตนเอง (Self-Deploy Architecture)
+                        </h2>
+                        <span class="badge" style="background:#064e3b; color:#a7f3d0;">ฟรี 100% ตลอดชีพ</span>
+                    </div>
+                    <p style="color:var(--text-muted); font-size:13px; line-height:1.6; margin-top:0;">
+                        ระบบ MangaThaiAI-Studio ถูกออกแบบมาให้ Deploy และอัปเดตง่ายที่สุดแบบ <b>Zero-Maintenance</b> ทุกครั้งที่คุณแก้ไขโค้ดหรือต้องการอัปเดต แค่ดับเบิ้ลคลิกไฟล์เดียว ระบบคลาวด์จะซิงก์ให้อัตโนมัติ:
+                    </p>
+
+                    <!-- 4-Step Pipeline Flow -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:18px;">
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:8px;">
+                                <span class="step-badge" style="background:#3b82f6;">1</span>
+                                <b style="color:#fff; font-size:15px;">แก้ไขโค้ดในเครื่อง</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                ทำงานหรือปรับแต่งไฟล์ในโฟลเดอร์ <code>D:\code\MangaThaiAI-Studio</code> ได้ตามต้องการ
+                            </p>
+                        </div>
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:8px;">
+                                <span class="step-badge" style="background:#10b981;">2</span>
+                                <b style="color:#fff; font-size:15px;">ดับเบิ้ลคลิก push_to_github.bat</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                ดับเบิ้ลคลิกไฟล์ <code>push_to_github.bat</code> ในโฟลเดอร์โปรเจกต์ สคริปต์จะ commit และ push ขึ้น GitHub ให้อัตโนมัติใน 3 วินาที
+                            </p>
+                        </div>
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:8px;">
+                                <span class="step-badge" style="background:#8b5cf6;">3</span>
+                                <b style="color:#fff; font-size:15px;">GitHub ซิงก์ Webhook</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                โค้ดจะถูกเก็บไว้ที่ GitHub <code>chaiyasitpiw-ops/MangaThaiAI-Studio</code> และส่งสัญญาณไปยัง Render.com
+                            </p>
+                        </div>
+                        <div class="step-card">
+                            <div style="display:flex; align-items:center; margin-bottom:8px;">
+                                <span class="step-badge" style="background:#ec4899;">4</span>
+                                <b style="color:#fff; font-size:15px;">Render Auto-Deploy</b>
+                            </div>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                                Render จะดึง Dockerfile ไปบิลด์และรันเซิร์ฟเวอร์บนคลาวด์ใหม่อัตโนมัติ (1-2 นาที) พร้อมใช้ได้ทุกที่ทั่วโลก!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Health & Server Links -->
                 <div class="card">
-                    <h2 style="margin-top:0; font-size:18px;">🎭 ผลการทดสอบเปรียบเทียบ: สำนวนมังงะธรรมชาติ (MangaThaiAI) vs แปลแข็งทื่อ (Google Translate)</h2>
-                    <div style="display:flex; flex-direction:column; gap:16px; margin-top:16px;">
-                        <div class="card" style="margin:0; background:#0b1120;">
-                            <b>Overgeared ตอน 343: ข้อความเควสต์</b>
-                            <div style="margin-top:6px; color:#cbd5e1; font-size:13px;">
-                                QUEST CLEAR CONDITIONS: GIVE THE NECESSARY HELP TO 5,000 CITIZENS
+                    <h2 style="margin-top:0; font-size:18px;">🔍 ตรวจสอบสถานะเซิร์ฟเวอร์คลาวด์สด (Live Status)</h2>
+                    <div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
+                        <button class="btn btn-outline" onclick="checkLiveServerHealth()" style="font-size:13px;">
+                            ⚡ กดเพื่อตรวจสอบการเชื่อมต่อเซิร์ฟเวอร์สด
+                        </button>
+                        <span id="healthStatusResult" style="font-size:13px; color:#94a3b8;">กดปุ่มเพื่อทดสอบ</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-top:18px; padding-top:18px; border-top:1px solid #1e293b;">
+                        <div>
+                            <span style="font-size:12px; color:var(--text-muted);">🌐 ลิงก์เว็บแอปบนคลาวด์ (ใช้งานได้ทุกเครื่อง):</span>
+                            <div style="margin-top:4px;">
+                                <a href="https://mangathaiai-studio.onrender.com" target="_blank" style="color:#38bdf8; font-weight:600; text-decoration:none;">
+                                    👉 https://mangathaiai-studio.onrender.com ↗
+                                </a>
                             </div>
-                            <div style="margin-top:8px; color:#6ee7b7; font-weight:600;">
-                                ✅ แปลไทยแบบมังงะ: "เงื่อนไขการเคลียร์ภารกิจ: มอบความช่วยเหลือแก่ประชาชน 5,000 คน!"
+                        </div>
+                        <div>
+                            <span style="font-size:12px; color:var(--text-muted);">☁️ แดชบอร์ด Render.com:</span>
+                            <div style="margin-top:4px;">
+                                <a href="https://dashboard.render.com" target="_blank" style="color:#a78bfa; font-weight:600; text-decoration:none;">
+                                    👉 https://dashboard.render.com ↗
+                                </a>
                             </div>
-                            <div style="margin-top:4px; color:#f87171; font-size:12px;">
-                                ❌ แปลแข็งดั้งเดิม: "เงื่อนไขที่ชัดเจนในการค้นหา: ให้ความช่วยเหลือที่จำเป็นแก่พลเมือง 5,000 คน"
+                        </div>
+                        <div>
+                            <span style="font-size:12px; color:var(--text-muted);">🐙 GitHub Repository ซอร์สโค้ด:</span>
+                            <div style="margin-top:4px;">
+                                <a href="https://github.com/chaiyasitpiw-ops/MangaThaiAI-Studio" target="_blank" style="color:#34d399; font-weight:600; text-decoration:none;">
+                                    👉 github.com/chaiyasitpiw-ops/MangaThaiAI-Studio ↗
+                                </a>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation of Fixed Errors -->
+                <div class="card">
+                    <h2 style="margin-top:0; font-size:18px;">💡 สาเหตุข้อผิดพลาดที่เกิดขึ้นก่อนหน้านี้ & ได้รับการแก้ไขแล้ว</h2>
+                    <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                        <div class="step-card">
+                            <b style="color:#fbbf24;">1. จอดำขึ้น "'in' is not recognized..." และ "'หั สผ าน' is not recognized..."</b>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:6px 0 0;">
+                                <b>สาเหตุ:</b> เกิดจาก Windows CMD อ่าน encoding ภาษาไทยในไฟล์ batch ไม่ถูกต้อง ทำให้แยกคำสั่งผิดพลาด<br>
+                                <b>การแก้ไข:</b> เราได้เขียนสคริปต์ <code>push_to_github.bat</code> ใหม่เป็นคำสั่ง ASCII บริสุทธิ์ 100% ทำให้รันได้เสถียร ไม่ขึ้น error อีกต่อไป
+                            </p>
+                        </div>
+                        <div class="step-card">
+                            <b style="color:#fbbf24;">2. Render Log แจ้ง "ModuleNotFoundError: No module named 'bs4'"</b>
+                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:6px 0 0;">
+                                <b>สาเหตุ:</b> ใน Dockerfile ขาดแพ็กเกจ <code>beautifulsoup4</code> ที่ใช้ดึงรูปมังงะจากหน้าเว็บ<br>
+                                <b>การแก้ไข:</b> เราได้ใส่ <code>beautifulsoup4>=4.12.0</code> และ <code>lxml>=5.1.0</code> เข้าไปใน requirements และ push ขึ้น GitHub แล้ว ตอนนี้ Render บิลด์ผ่านฉลุยและออนไลน์ 100%
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Floating Glass Theater HUD (Appears when scrolling or in theater mode) -->
+        <!-- Mobile Bottom Navigation Dock (iPhone / iPad / Mobile Screens) -->
+        <div class="mobile-bottom-nav">
+            <button class="mobile-nav-btn active" data-tab="tab-webreader" onclick="switchTab('tab-webreader')">
+                <span class="mobile-nav-icon">📖</span>
+                <span>อ่านมังงะ</span>
+            </button>
+            <button class="mobile-nav-btn" data-tab="tab-settings" onclick="switchTab('tab-settings')">
+                <span class="mobile-nav-icon">🎨</span>
+                <span>ปรับแต่ง</span>
+            </button>
+            <button class="mobile-nav-btn" data-tab="tab-ios" onclick="switchTab('tab-ios')">
+                <span class="mobile-nav-icon">📱</span>
+                <span>iPhone</span>
+            </button>
+            <button class="mobile-nav-btn" data-tab="tab-deploy" onclick="switchTab('tab-deploy')">
+                <span class="mobile-nav-icon">🚀</span>
+                <span>Deploy</span>
+            </button>
+        </div>
+
+        <!-- Floating Glass Theater HUD -->
         <div id="floatingTheaterHud" class="floating-hud" style="display:none;">
             <span id="floatingHudStatus" style="font-size:13px; font-weight:600; color:#cbd5e1;">หน้า 0/0</span>
             <div style="height:16px; width:1px; background:#334155;"></div>
@@ -700,7 +1013,7 @@ async def dashboard():
             let startTime = 0;
             let translatedCount = 0;
             let isTheaterMode = false;
-            let systemEnabled = true; // ON/OFF power state
+            let systemEnabled = true;
 
             // ── System Power Toggle ──────────────────────────────────────
             function toggleSystemPower(enabled) {
@@ -785,10 +1098,10 @@ async def dashboard():
                 }
             }
 
-            // Click-to-Scroll Event Handler: Click upper screen to scroll up, lower to scroll down
+            // Click-to-Scroll Event Handler
             document.addEventListener('click', function(e) {
                 if (!isClickScrollEnabled) return;
-                if (e.target.closest('button, input, select, a, .page-floating-bar, .floating-hud, #floatingSideNav, header, .card')) {
+                if (e.target.closest('button, input, select, a, .page-floating-bar, .floating-hud, #floatingSideNav, header, .card, .mobile-bottom-nav')) {
                     return;
                 }
                 const y = e.clientY;
@@ -800,7 +1113,7 @@ async def dashboard():
                 }
             });
 
-            // Keyboard Navigation (Space, ArrowDown, ArrowUp, J, K, PageDown, PageUp)
+            // Keyboard Navigation
             document.addEventListener('keydown', function(e) {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
                 if (e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) {
@@ -812,21 +1125,37 @@ async def dashboard():
                 }
             });
 
+            // Switch Category Tabs (Both Top Tabs and Bottom Mobile Dock)
             function switchTab(tabId) {
                 document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                document.getElementById(tabId).style.display = 'block';
-                event.target.classList.add('active');
+                document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
+                
+                const target = document.getElementById(tabId);
+                if (target) {
+                    target.style.display = 'block';
+                }
+                
+                document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(btn => btn.classList.add('active'));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
-            function loadAsuraUrl() {
-                document.getElementById('webUrlInput').value = 'https://asurascans.com/comics/overgeared-1bb35e56/chapter/343';
-                fetchAndReadWebManga();
-            }
-
-            function loadTestUrl() {
-                document.getElementById('webUrlInput').value = 'http://localhost:8000/static/sample_manga.png';
-                fetchAndReadWebManga();
+            function loadQuickUrl(type) {
+                const input = document.getElementById('webUrlInput');
+                switchTab('tab-webreader');
+                if (type === 'overgeared') {
+                    input.value = 'https://asurascans.com/comics/overgeared-1bb35e56/chapter/343';
+                    fetchAndReadWebManga();
+                } else if (type === 'sololeveling') {
+                    input.value = 'https://asurascans.com/comics/solo-leveling/chapter/1';
+                    fetchAndReadWebManga();
+                } else if (type === 'onepiece') {
+                    input.value = 'https://mangaplus.shueisha.co.jp/viewer/1000001';
+                    fetchAndReadWebManga();
+                } else if (type === 'demo') {
+                    input.value = window.location.origin + '/static/sample_manga.png';
+                    fetchAndReadWebManga();
+                }
             }
 
             function changeReaderWidth(val) {
@@ -875,7 +1204,85 @@ async def dashboard():
             }
 
             function onSettingChanged() {
-                // If images are already loaded, user can re-translate
+                // Settings changed handler
+            }
+
+            // ── Live Interactive Sandbox Preview ─────────────────────────
+            const tonePresetsText = {
+                shonen: '"เฮ้ย! รอก่อนสิฟะ!<br>อย่าเพิ่งไปทางนั้นนะโว้ย!"',
+                shojo: '"นี่... นายจะไปจริงๆ เหรอ?<br>ฉันยังไม่อยากให้ไปเลยนะ..."',
+                seinen: '"ความจริงมีเพียงหนึ่งเดียวเท่านั้น...<br>และหลักฐานชิ้นนี้คือคำตอบ"',
+                comedy: '"เดี๋ยวก่อนนะพี่ชาย!<br>ลืมรูดซิปกางเกงหรือเปล่าเนี่ย 555!"'
+            };
+
+            function updateLivePreview() {
+                const font = document.getElementById('sandboxFontSelect').value;
+                const backdrop = document.getElementById('sandboxBackdropSelect').value;
+                const tone = document.getElementById('sandboxToneSelect').value;
+                const custom = document.getElementById('sandboxCustomText').value.trim();
+
+                const displayBox = document.getElementById('sandboxBubbleDisplay');
+                const textBox = document.getElementById('sandboxBubbleText');
+
+                if (font === 'mali') {
+                    textBox.style.fontFamily = "'Mali', cursive";
+                } else if (font === 'kanit') {
+                    textBox.style.fontFamily = "'Kanit', sans-serif";
+                } else if (font === 'chakrapetch') {
+                    textBox.style.fontFamily = "'Chakra Petch', sans-serif";
+                }
+
+                if (backdrop === 'natural') {
+                    displayBox.style.background = '#ffffff';
+                    displayBox.style.color = '#0f172a';
+                    displayBox.style.border = '3px solid #334155';
+                    displayBox.style.borderRadius = '24px';
+                    displayBox.style.boxShadow = '0 8px 30px rgba(0,0,0,0.6)';
+                } else if (backdrop === 'soft_white') {
+                    displayBox.style.background = 'rgba(255, 255, 255, 0.95)';
+                    displayBox.style.color = '#0f172a';
+                    displayBox.style.border = '2px dashed #94a3b8';
+                    displayBox.style.borderRadius = '20px';
+                    displayBox.style.boxShadow = '0 4px 15px rgba(255,255,255,0.1)';
+                } else if (backdrop === 'dark_box') {
+                    displayBox.style.background = '#0b1221';
+                    displayBox.style.color = '#38bdf8';
+                    displayBox.style.border = '2px solid #38bdf8';
+                    displayBox.style.borderRadius = '10px';
+                    displayBox.style.boxShadow = '0 0 25px rgba(56,189,248,0.35)';
+                }
+
+                if (custom) {
+                    textBox.innerText = custom;
+                } else {
+                    textBox.innerHTML = tonePresetsText[tone] || tonePresetsText['shonen'];
+                }
+
+                const mainFont = document.getElementById('fontFamilySelect');
+                if (mainFont) mainFont.value = font;
+                const mainTone = document.getElementById('globalToneSelect');
+                if (mainTone) mainTone.value = tone;
+                const mainBackdrop = document.getElementById('backdropModeSelect');
+                if (mainBackdrop) mainBackdrop.value = (backdrop === 'dark_box' ? 'natural' : backdrop);
+            }
+
+            // ── Cloud Server Health Checker ──────────────────────────────
+            async function checkLiveServerHealth() {
+                const el = document.getElementById('healthStatusResult');
+                el.innerHTML = '<span style="color:#fbbf24;">⏳ กำลังเชื่อมต่อเซิร์ฟเวอร์...</span>';
+                const t0 = Date.now();
+                try {
+                    const res = await fetch('/health');
+                    const data = await res.json();
+                    const latency = Date.now() - t0;
+                    if (data.status === 'online') {
+                        el.innerHTML = `<span style="color:#34d399; font-weight:600;">● ออนไลน์สมบูรณ์ (${latency}ms) | เวอร์ชัน: ${data.version} | เซิร์ฟเวอร์: ${data.service}</span>`;
+                    } else {
+                        el.innerHTML = `<span style="color:#ef4444;">ข้อผิดพลาด: ${JSON.stringify(data)}</span>`;
+                    }
+                } catch(e) {
+                    el.innerHTML = `<span style="color:#ef4444;">เชื่อมต่อล้มเหลว: ${e}</span>`;
+                }
             }
 
             async function fetchAndReadWebManga() {
@@ -891,7 +1298,7 @@ async def dashboard():
                 const container = document.getElementById('pagesContainer');
                 const section = document.getElementById('webReaderSection');
 
-                container.innerHTML = '<p style="color:#fbbf24; text-align:center; padding:40px; font-size:16px;">⏳ กำลังเชื่อมต่อและดึงหน้ามังงะจากหน้าเว็บ Asura Scans...</p>';
+                container.innerHTML = '<p style="color:#fbbf24; text-align:center; padding:40px; font-size:16px;">⏳ กำลังเชื่อมต่อและดึงหน้ามังงะจากหน้าเว็บ...</p>';
                 section.style.display = 'block';
 
                 try {
@@ -989,7 +1396,6 @@ async def dashboard():
                 isPaused = false;
                 startTimer();
 
-                // 3 Concurrent Streaming Workers for 50% faster completion
                 const concurrency = 3;
                 let queueIndex = 0;
 
@@ -1014,7 +1420,7 @@ async def dashboard():
             }
 
             async function translateSingleWebPage(idx, imgUrl) {
-                if (!systemEnabled) return; // Skip if system is OFF
+                if (!systemEnabled) return;
                 const imgEl = document.getElementById('mangaImg_' + idx);
                 const timeBadge = document.getElementById('timeBadge_' + idx);
                 const btn = document.getElementById('btnTranslate_' + idx);
