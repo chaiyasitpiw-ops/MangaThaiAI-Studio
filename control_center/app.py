@@ -64,16 +64,26 @@ orchestrator = MangaOrchestrator()
 crawler = WebMangaCrawler()
 
 
-def pil_to_base64(img: Image.Image) -> str:
+def pil_to_base64(img: Image.Image, format: str = "JPEG", quality: int = 85) -> str:
     buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
+    if format.upper() == "JPEG":
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        img.save(buffered, format="JPEG", quality=quality, optimize=True)
+    else:
+        img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 
-def bgr_to_base64(img_bgr) -> str:
+def bgr_to_base64(img_bgr, format: str = "JPEG", quality: int = 85) -> str:
+    if img_bgr is None:
+        return ""
     rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(rgb)
-    return pil_to_base64(pil_img)
+    b64 = pil_to_base64(pil_img, format=format, quality=quality)
+    del rgb
+    del pil_img
+    return b64
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -1449,8 +1459,23 @@ async def dashboard():
                         return true;
                     } else {
                         const errMsg = data.error || 'ไม่พบรูปภาพมังงะใน URL นี้';
-                        inspectTitle.innerHTML = '<span style="color:#f87171;">⚠️ ไม่พบรูปภาพ</span>';
-                        inspectSubtitle.innerHTML = `<span style="color:#f87171;">${errMsg}</span><br><button class="btn btn-outline" style="margin-top:8px; font-size:12px;" onclick="openSourceWebpage()">🌐 ลองเปิดดูหน้าเว็บต้นฉบับ</button>`;
+                        const isBot = errMsg.includes('Bot protection') || errMsg.includes('403');
+                        inspectTitle.innerHTML = `<span style="color:#f87171;">⚠️ ไม่พบรูปภาพ ${isBot ? '(เว็บติดระบบกันบอท Cloudflare)' : ''}</span>`;
+                        inspectSubtitle.innerHTML = `
+                            <span style="color:#f87171;">${errMsg}</span>
+                            <div style="margin-top:12px; padding:12px; background:#0f172a; border-radius:8px; border:1px solid #3b82f6;">
+                                <div style="font-weight:600; color:#38bdf8; margin-bottom:6px;">💡 แนะนำวิธีแปลสำหรับเว็บที่มีระบบกันบอท:</div>
+                                <div style="font-size:12px; color:#cbd5e1; line-height:1.6;">
+                                    • เว็บไซต์มังงะต้นทางมี Cloudflare บล็อกเซิร์ฟเวอร์คลาวด์ภายนอก<br>
+                                    • คุณสามารถเปิดดูเว็บมังงะนั้นบนเบราว์เซอร์ของคุณ แล้วกด <b>Bookmarklet แปลสด</b> ได้ทันที 100% โดยไม่ติดระบบกันบอท<br>
+                                    • หรือคัดลอกลิงก์รูปภาพ (Image Address) จากหน้าเว็บนั้นมาวางในช่องได้โดยตรง
+                                </div>
+                                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                                    <button class="btn btn-outline" style="font-size:12px; padding:5px 12px;" onclick="openSourceWebpage()">🌐 เปิดดูหน้าเว็บต้นฉบับ</button>
+                                    <button class="btn btn-primary" style="font-size:12px; padding:5px 12px;" onclick="copyBookmarkletCode()">📋 คัดลอก Bookmarklet แปลสดบนหน้าเว็บ</button>
+                                </div>
+                            </div>
+                        `;
                         return false;
                     }
                 } catch(e) {
@@ -1522,7 +1547,8 @@ async def dashboard():
                 isPaused = false;
                 startTimer();
 
-                const concurrency = 3;
+                // Concurrency 1 worker ensures strict memory safety on free cloud instances (512MB RAM limit)
+                const concurrency = 1;
                 let queueIndex = 0;
 
                 async function worker() {
@@ -1574,8 +1600,12 @@ async def dashboard():
                     const pageElapsed = ((Date.now() - pageT0) / 1000).toFixed(1);
 
                     if (data.status === 'success') {
-                        imgEl.src = 'data:image/png;base64,' + data.result_b64;
-                        imgEl.setAttribute('data-translated', 'data:image/png;base64,' + data.result_b64);
+                        let finalSrc = data.result_b64;
+                        if (!finalSrc.startsWith('data:')) {
+                            finalSrc = (finalSrc.startsWith('/9j/') ? 'data:image/jpeg;base64,' : 'data:image/png;base64,') + finalSrc;
+                        }
+                        imgEl.src = finalSrc;
+                        imgEl.setAttribute('data-translated', finalSrc);
                         const cacheTag = data.cached ? '⚡ แคชทันใจ 0.0s' : `✓ เสร็จใน ${pageElapsed}s`;
                         timeBadge.innerHTML = `<span style="color:#34d399;">${cacheTag} (${data.bubbles_count} บอลลูน)</span>`;
                         btn.innerText = '✓';
@@ -1723,14 +1753,15 @@ async def translate_image_url(req: TranslateImageUrlRequest):
                     tmp_path.unlink()
 
         elapsed = round(time.time() - t0, 2)
+        result_b64 = pil_to_base64(res["result_pil"], format="JPEG", quality=85)
         response_data = {
             "status": "success",
             "cached": False,
             "elapsed_seconds": elapsed,
             "bubbles_count": len(res["bubbles"]),
             "bubbles": res["bubbles"],
-            "cleaned_b64": bgr_to_base64(res["cleaned_bgr"]),
-            "result_b64": pil_to_base64(res["result_pil"]),
+            "cleaned_b64": "",  # Skipped to save 50% RAM & JSON network size
+            "result_b64": result_b64,
         }
 
         # Save to disk cache for instantaneous reloads
@@ -1739,6 +1770,11 @@ async def translate_image_url(req: TranslateImageUrlRequest):
                 json.dump(response_data, f, default=str)
         except Exception as e:
             logger.warning(f"Could not cache result: {e}")
+
+        # Explicit cleanup to prevent memory accumulation on low-RAM cloud instances
+        del res
+        import gc
+        gc.collect()
 
         return response_data
 

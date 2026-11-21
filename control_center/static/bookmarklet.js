@@ -92,7 +92,11 @@
             const data = await resp.json();
 
             if (data.status === "success" && data.result_b64) {
-                img.src = "data:image/png;base64," + data.result_b64;
+                let finalSrc = data.result_b64;
+                if (!finalSrc.startsWith("data:")) {
+                    finalSrc = (finalSrc.startsWith("/9j/") ? "data:image/jpeg;base64," : "data:image/png;base64,") + finalSrc;
+                }
+                img.src = finalSrc;
                 img.style.opacity = "1";
                 img.style.filter = "none";
                 statusEl.innerHTML = `<span style="color:#34d399;">✓ แปลรูปภาพสำเร็จ! (${data.bubbles_count} บอลลูน)</span>`;

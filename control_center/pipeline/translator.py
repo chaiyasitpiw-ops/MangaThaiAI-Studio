@@ -15,6 +15,7 @@ class MangaTone:
     SHOJO = "shojo"         # ตาหวาน/รัก: ละมุน ซึนเดเระ (นาย, ฉัน, บ้าจริง, ยะ)
     SEINEN = "seinen"       # สืบสวน/ดาร์ก: สุขุม จริงจัง เป็นธรรมชาติ
     COMEDY = "comedy"       # ตลก/แก๊ก: กวนๆ ภาษาพูด วลีฮาๆ
+    ADULT_18 = "adult_18"   # 🔞 18+ / มังงะผู้ใหญ่: เร้าอารมณ์ ครางเสียว จัดหนัก เผ็ดร้อน ดาร์ก & ฟิน
 
 
 class MangaNaturalTranslator:
@@ -150,9 +151,35 @@ class MangaNaturalTranslator:
             "sister! want me to buy you a sweet potato latte?": "น้องสาว! ให้พี่ซื้อลาเต้มันหวานให้เอาไหม?!",
             "what does that mean? why did the quest suddenly": "หมายความว่ายังไงกัน? ทำไมจู่ๆ เควสต์ถึง...",
             "what does that mean? why did the quest suddenly-?!": "หมายความว่ายังไงกัน? ทำไมจู่ๆ เควสต์ถึง...",
+            # 18+ Adult English comic & webtoon terms
+            "i'm cumming": "ฉันจะเสร็จแล้ว...!",
+            "i'm coming": "ฉันจะเสร็จแล้ว...!",
+            "cum for me": "เสร็จพร้อมฉันนะ...",
+            "cum inside me": "แตกข้างในฉันเลย...",
+            "fill me up": "เติมเต็มข้างในฉันที...",
+            "it feels so good": "มันรู้สึกดีเหลือเกิน...",
+            "feels so good": "รู้สึกดีสุดๆ...",
+            "deeper": "ลึกกว่านี้อีก...",
+            "harder": "แรงกว่านี้อีก...",
+            "don't stop": "อย่าหยุดนะ...",
+            "please don't stop": "ได้โปรดอย่าหยุดนะ...",
+            "i can't take it anymore": "ฉันทนไม่ไหวแล้ว...",
+            "i can't hold it": "จะกลั้นไม่ไหวแล้ว...",
+            "it's so big": "มันใหญ่เกินไปแล้ว...",
+            "so big": "ใหญ่จัง...",
+            "so tight": "แน่นไปหมดเลย...",
+            "i'm so wet": "แฉะไปหมดแล้ว...",
+            "suck it": "ช่วยอมให้หน่อยสิ...",
+            "lick it": "เลียตรงนั้นสิ...",
+            "fuck me": "จัดฉันที... / เอาฉันแรงๆ เลย...",
+            "fuck harder": "กระแทกแรงกว่านี้...",
+            "ahhn": "อ๊าง...!",
+            "ahh": "อ่าห์...",
+            "ngh": "อื้ม...!",
+            "mmph": "อื้อออ...",
         }
 
-        # Korean manhwa common idioms
+        # Korean manhwa common idioms & 18+ Adult webtoon terms
         self.kr_slang_map = {
             "젠장": "โธ่เว้ย...!",
             "말도 안 돼": "เป็นไปไม่ได้น่า...!",
@@ -165,9 +192,83 @@ class MangaNaturalTranslator:
             "퀘스트": "เควสต์",
             "상태창": "หน้าต่างสถานะ",
             "레벨업": "เลเวลอัป!",
+            # 18+ Adult Manhwa (NewXtoon, Toptoon, Lezhin)
+            "다 따먹음": "จับกินเรียบ",
+            "따먹음": "จัดการเรียบ / ฟันเรียบ",
+            "따먹다": "จับกิน / เคลม / ฟัน",
+            "그럼우선 무릎끓고 빨아주실래요?": "งั้นก่อนอื่น คุกเข่าลงแล้วช่วยอมให้ฉันหน่อยได้ไหม...?",
+            "그럼우선 무릎꿇고 빨아주실래요?": "งั้นก่อนอื่น คุกเข่าลงแล้วช่วยอมให้ฉันหน่อยได้ไหม...?",
+            "그럼우선": "งั้นก่อนอื่น...",
+            "무릎끓고": "คุกเข่าลง...",
+            "무릎꿇고": "คุกเข่าลง...",
+            "빨아주실래요?": "ช่วยอมให้หน่อยได้ไหม...?",
+            "빨아주실래요": "ช่วยอมให้หน่อยได้ไหม...",
+            "빨아줘": "อมให้หน่อยสิ...",
+            "빨아": "ดูดสิ... / อมเข้าไป...",
+            "하앙": "อ๊าง...!",
+            "하아": "ฮ้าาา...",
+            "앗": "อ๊ะ...!",
+            "읏": "อื้ม...!",
+            "응": "อืม...",
+            "기분 좋아": "รู้สึกดีจัง...",
+            "너무 좋아": "ฟินสุดๆ เลย...",
+            "더 깊이": "ลึกกว่านี้อีก...",
+            "더 세게": "แรงกว่านี้...",
+            "안돼": "ไม่นะ... / อย่านะ...",
+            "가버려": "จะเสร็จแล้ว...!",
+            "갈 것 같아": "จะทนไม่ไหวแล้ว...",
+            "싸줘": "แตกข้างในนะ...",
+            "싸버렸어": "แตกออกมาแล้ว...",
+            "젖었어": "แฉะไปหมดแล้ว...",
+            "크다": "ใหญ่จัง...",
+            "너무 커": "มันใหญ่เกินไปแล้ว...",
+            "넣어줘": "ใส่เข้ามาสิ...",
+            "만져줘": "จับตรงนั้นสิ...",
+            "신음": "เสียงคราง",
         }
 
-        # Chinese manhua common idioms
+        # Russian manga / manhwa & 18+ adult terms
+        self.ru_slang_map = {
+            # Exclamations & General
+            "что за черт": "อะไรวะเนี่ย!",
+            "черт": "บัดซบเอ๊ย!",
+            "черт возьми": "โธ่เว้ย!",
+            "блин": "ให้ตายสิ!",
+            "сука": "เวรเอ๊ย!",
+            "блять": "ไอ้เวรเอ๊ย!",
+            "бля": "ชิบหาย!",
+            "не может быть": "เป็นไปไม่ได้น่า...!",
+            "подожди": "เดี๋ยวก่อนสิ!",
+            "стой": "หยุดนะ!",
+            "заткнись": "หุบปากไปซะ!",
+            "пошел ты": "ไสหัวไปซะ!",
+            "пожалуйста": "ได้โปรดเถอะ...",
+            "спасибо": "ขอบใจนะ",
+            "невероятно": "เหลือเชื่อเลย...",
+            # 18+ Adult Russian terms
+            "я кончаю": "ฉันจะเสร็จแล้ว...!",
+            "кончаю": "จะเสร็จแล้ว...!",
+            "глубже": "ลึกกว่านี้อีก...",
+            "сильнее": "แรงกว่านี้...",
+            "еще": "เอาอีก...",
+            "не останавливайся": "อย่าหยุดนะ...",
+            "так хорошо": "มันรู้สึกดีเหลือเกิน...",
+            "мне так приятно": "ฟินสุดๆ เลย...",
+            "не могу больше": "ทนไม่ไหวแล้ว...",
+            "внутри": "ข้างใน...",
+            "кончи в меня": "แตกข้างในฉันเลย...",
+            "трахать": "จัดหนัก / ทำเรื่องอย่างว่า",
+            "отсоси": "อมให้หน่อยสิ...",
+            "соси": "ดูดสิ...",
+            "мокрая": "แฉะไปหมดแล้ว...",
+            "такой большой": "ใหญ่จังเลย...",
+            "ах": "อ่าห์...",
+            "ох": "โอ๊ย... / อ๊ะ...",
+            "ух": "ซี้ด...",
+            "ммм": "อืมมม...",
+        }
+
+        # Chinese manhua common idioms & 18+ Adult terms
         self.cn_slang_map = {
             "混账": "สารเลวเอ๊ย!",
             "找死": "รนหาที่ตาย!",
@@ -176,6 +277,27 @@ class MangaNaturalTranslator:
             "放肆": "บังอาจนัก!",
             "阁下": "ท่านผู้เจริญ / ท่าน",
             "看招": "รับกระบวนท่านี้ไปซะ!",
+            # 18+ Adult Chinese terms
+            "好爽": "เสียวจัง...!",
+            "好舒服": "รู้สึกดีเหลือเกิน...",
+            "高潮": "เสร็จสม / จุดสุดยอด",
+            "快到了": "ใกล้จะเสร็จแล้ว...",
+            "受不了了": "ทนไม่ไหวแล้ว...",
+            "受不了": "ไม่ไหวแล้ว...",
+            "用力点": "แรงอีกสิ...",
+            "用力": "แรงๆ เลย...",
+            "深一点": "ลึกกว่านี้อีก...",
+            "还要": "ยังอยากได้อีก...",
+            "不要停": "อย่าหยุดนะ...",
+            "射在里面": "แตกข้างในเลย...",
+            "射了": "ปล่อยออกมาแล้ว...",
+            "太大了": "มันใหญ่เกินไปแล้ว...",
+            "好大": "ใหญ่จัง...",
+            "湿透了": "แฉะไปหมดแล้ว...",
+            "慢一点": "ช้าหน่อยสิ...",
+            "舔我": "เลียให้ฉันที...",
+            "嗯啊": "อื้อหือ...!",
+            "啊哈": "อ๊าง...!",
         }
 
         # Stiff phrase cleaner (Fixes Google Translate robotic artifacts in Thai text)
@@ -246,6 +368,33 @@ class MangaNaturalTranslator:
             (r"ฉันสงสัยว่าสิ่งนี้มีอะไรบ้าง", "อยากรู้จริงว่าคราวนี้จะมีอะไรรออยู่"),
             (r"ฉันสงสัยว่าสิ่งนี้คืออะไร", "อยากรู้จริงว่าคราวนี้คืออะไร"),
             (r"สิ่งนี้มีอะไรบ้าง", "จะมีอะไรรออยู่บ้าง"),
+            # 18+ Adult Manhwa / Manga phrasing fixes (Eliminate robotic literal machine translation)
+            (r"กินเพื่อนร่วมห้อง", "จับเพื่อนร่วมห้องกินเรียบ"),
+            (r"กินเพื่อนร่วมชั้น", "จับเพื่อนร่วมห้องกินเรียบ"),
+            (r"กินเพื่อนๆ", "จับเพื่อนกินเรียบ"),
+            (r"กินพวกเธอ", "จัดพวกเธอซะเรียบ"),
+            (r"เย็ดฉันให้หนักขึ้น", "เอาฉันแรงกว่านี้สิ"),
+            (r"เย็ดฉันแรงขึ้น", "กระแทกฉันแรงกว่านี้สิ"),
+            (r"เย็ดฉัน", "จัดฉันที"),
+            (r"เย็ด", "จัดหนัก"),
+            (r"คุณจะคุกเข่าดูดฉันไหม", "ช่วยคุกเข่าลงแล้วอมให้ฉันหน่อยได้ไหม"),
+            (r"คุณจะคุกเข่าดูดผมไหม", "ช่วยคุกเข่าลงแล้วอมให้ผมหน่อยได้ไหม"),
+            (r"คุณจะคุกเข่า", "คุกเข่าลง"),
+            (r"ดูดฉันไหม", "อมให้ฉันหน่อยได้ไหม"),
+            (r"ดูดผมไหม", "อมให้ผมหน่อยได้ไหม"),
+            (r"ดูดของฉัน", "อมของฉัน"),
+            (r"ดูดของผม", "อมของผม"),
+            (r"\bไก่ผู้\b", "ท่อนเอ็น"),
+            (r"\bแมว\b(?=.*(?:เปียก|แฉะ|เสร็จ|สอด|ใส่))", "ร่องรัก"),
+            (r"การมีเพศสัมพันธ์", "ทำเรื่องอย่างว่า"),
+            (r"มีเพศสัมพันธ์", "ทำเรื่องอย่างว่า"),
+            (r"หลั่งน้ำอสุจิ", "ปล่อยน้ำรัก"),
+            (r"จุดสุดยอดทางเพศ", "จุดสุดยอด"),
+            (r"การสำเร็จความใคร่", "ช่วยตัวเอง"),
+            (r"ฉันกำลังคัมมิง", "ฉันจะเสร็จแล้ว..."),
+            (r"คัมมิง", "เสร็จแล้ว"),
+            (r"ลึกลงไปอีก", "ลึกกว่านี้อีก"),
+            (r"รู้สึกดีมาก(?=.*[~!\. …])", "รู้สึกดีชะมัด"),
         ]
 
     def polish_thai_dialogue(self, thai_text: str, tone: str = MangaTone.SHONEN) -> str:
@@ -267,10 +416,12 @@ class MangaNaturalTranslator:
         words_count = len(cleaned_src.split())
         lang = source_lang.lower()
         if lang == "auto":
-            if re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]", cleaned_src):
-                lang = "jp" if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", cleaned_src) else "cn"
-            elif re.search(r"[\uac00-\ud7af]", cleaned_src):
+            if re.search(r"[\u0400-\u04ff]", cleaned_src):
+                lang = "ru"
+            elif re.search(r"[\uac00-\ud7af\u1100-\u11ff]", cleaned_src):
                 lang = "kr"
+            elif re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]", cleaned_src):
+                lang = "jp" if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", cleaned_src) else "cn"
             else:
                 lang = "en"
 
@@ -280,20 +431,25 @@ class MangaNaturalTranslator:
                     return th_val
         elif lang == "en":
             cleaned_lower = cleaned_src.lower()
-            # Exact match
             if cleaned_lower in self.en_slang_map:
                 return self.en_slang_map[cleaned_lower]
-            # Partial match ONLY for short exclamations (4 words or less)
-            # Never truncate a full sentence to a single slang word!
             if words_count <= 4:
                 for en_key, th_val in self.en_slang_map.items():
                     if en_key == cleaned_lower or en_key in cleaned_lower:
                         return th_val
-        elif lang == "kr":
+        elif lang in ("kr", "ko"):
             for kr_key, th_val in self.kr_slang_map.items():
                 if kr_key in cleaned_src:
                     return th_val
-        elif lang == "cn":
+        elif lang == "ru":
+            cleaned_lower = cleaned_src.lower()
+            if cleaned_lower in self.ru_slang_map:
+                return self.ru_slang_map[cleaned_lower]
+            if words_count <= 3:
+                for ru_key, th_val in self.ru_slang_map.items():
+                    if ru_key == cleaned_lower or ru_key in cleaned_lower:
+                        return th_val
+        elif lang in ("cn", "zh"):
             for cn_key, th_val in self.cn_slang_map.items():
                 if cn_key in cleaned_src:
                     return th_val
@@ -307,10 +463,29 @@ class MangaNaturalTranslator:
 
     def _query_translation_api(self, text: str, source_lang: str = "auto") -> Optional[str]:
         """Queries reliable translation APIs with automatic multi-engine failover."""
+        lang_code_map = {
+            "auto": "auto",
+            "en": "en",
+            "english": "en",
+            "kr": "ko",
+            "ko": "ko",
+            "korean": "ko",
+            "ru": "ru",
+            "russian": "ru",
+            "cyrillic": "ru",
+            "cn": "zh-CN",
+            "zh": "zh-CN",
+            "chinese": "zh-CN",
+            "jp": "ja",
+            "ja": "ja",
+            "japanese": "ja",
+        }
+        sl = lang_code_map.get(source_lang.lower(), "auto")
+
         # Engine 1: Google dict-chrome-ex (High speed, avoids 429 rate limit)
         try:
             url = "https://clients5.google.com/translate_a/t"
-            params = {"client": "dict-chrome-ex", "sl": source_lang, "tl": "th", "q": text}
+            params = {"client": "dict-chrome-ex", "sl": sl, "tl": "th", "q": text}
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
             r = httpx.get(url, params=params, headers=headers, timeout=6.0)
             if r.status_code == 200:
@@ -323,7 +498,7 @@ class MangaNaturalTranslator:
         # Engine 2: MyMemory API Fallback
         try:
             url = "https://api.mymemory.translated.net/get"
-            langpair = f"{source_lang}|th" if source_lang != "auto" else "en|th"
+            langpair = f"{sl}|th" if sl != "auto" else "en|th"
             params = {"q": text, "langpair": langpair}
             r = httpx.get(url, params=params, timeout=5.0)
             if r.status_code == 200:
@@ -343,8 +518,8 @@ class MangaNaturalTranslator:
     ) -> str:
         """
         Translates and polishes dialogue into authentic natural Thai manga prose.
-        source_lang: 'jp', 'en', 'kr', 'cn', or 'auto'
-        tone: 'shonen', 'shojo', 'seinen', 'comedy'
+        source_lang: 'kr', 'ru', 'en', 'cn', 'jp', or 'auto'
+        tone: 'adult_18', 'shonen', 'shojo', 'seinen', 'comedy'
         """
         cleaned_src = source_text.strip()
         if not cleaned_src:
@@ -353,13 +528,12 @@ class MangaNaturalTranslator:
         # Auto detect language if set to auto
         lang = source_lang.lower()
         if lang == "auto":
-            if re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]", cleaned_src):
-                if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", cleaned_src):
-                    lang = "jp"
-                else:
-                    lang = "cn"
-            elif re.search(r"[\uac00-\ud7af]", cleaned_src):
+            if re.search(r"[\u0400-\u04ff]", cleaned_src):
+                lang = "ru"
+            elif re.search(r"[\uac00-\ud7af\u1100-\u11ff]", cleaned_src):
                 lang = "kr"
+            elif re.search(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]", cleaned_src):
+                lang = "jp" if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", cleaned_src) else "cn"
             else:
                 lang = "en"
 
@@ -395,7 +569,19 @@ class MangaNaturalTranslator:
         if "(" in out and ")" not in out:
             out = out + ")"
 
-        if tone == MangaTone.SHONEN:
+        if tone == MangaTone.ADULT_18:
+            # 🔞 18+ Adult Tone: Sensual, intimate, passionate, evocative adult dialogue
+            out = re.sub(r"\bคุณจะ\b", "ช่วย", out)
+            out = re.sub(r"\bคุณ\b", "เธอ", out)
+            out = re.sub(r"\bดูดฉัน\b", "อมให้ฉัน", out)
+            out = re.sub(r"\bดูดผม\b", "อมให้ผม", out)
+            out = re.sub(r"\bกินผม\b", "จัดผม", out)
+            out = re.sub(r"\bกินฉัน\b", "จัดฉัน", out)
+            out = re.sub(r"\bเว้ย\b", "", out)
+            out = re.sub(r"\bฟะ\b", "นะ...", out)
+            if not out.endswith(("!", "?", "...", "…", "~")):
+                out = out + "..."
+        elif tone == MangaTone.SHONEN:
             # Action/Shonen: energetic, punchy dialogue without breaking characters
             out = re.sub(r"\bฉันจะทำการ\b", "ข้าจะ", out)
         elif tone == MangaTone.SHOJO:

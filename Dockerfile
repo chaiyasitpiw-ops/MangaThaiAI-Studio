@@ -30,7 +30,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     wordsegment \
     qrcode[pil] \
     beautifulsoup4 \
-    lxml
+    lxml \
+    curl_cffi
 
 # Copy application files
 COPY --chown=user:user . .

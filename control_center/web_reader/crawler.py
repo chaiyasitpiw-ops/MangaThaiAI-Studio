@@ -19,6 +19,12 @@ import httpx
 from bs4 import BeautifulSoup
 import logging
 
+try:
+    from curl_cffi.requests import AsyncSession
+    HAS_CURL_CFFI = True
+except ImportError:
+    HAS_CURL_CFFI = False
+
 logger = logging.getLogger("WebMangaCrawler")
 
 # Rotate between browser user-agents for better site compatibility
@@ -154,10 +160,21 @@ class WebMangaCrawler:
         Extracts all manga page image URLs from a given webpage URL.
         Handles: direct image links, HTML manga chapter pages, MangaDex API, JSON-embedded images.
         """
-        # Normalize and clean input URL
-        page_url = (page_url or "").strip()
-        # Remove invisible unicode characters and line breaks
-        page_url = re.sub(r"[\s\u200b\u200e\u200f\ufeff]+", "", page_url)
+        raw_input = (page_url or "").strip()
+        # Detect if user pasted multiple URLs or raw text containing image links
+        urls_in_input = re.findall(r'https?://[^\s\'"<>]+\.(?:jpg|jpeg|png|webp|avif|gif)(?:\?[^\s\'"<>]*)?', raw_input, re.IGNORECASE)
+        if len(urls_in_input) > 1:
+            valid_urls = [u for u in urls_in_input if self._is_valid_manga_image(u)]
+            if valid_urls:
+                return {
+                    "source_url": valid_urls[0],
+                    "title": f"Manga Images ({len(valid_urls)} หน้า)",
+                    "images": valid_urls,
+                    "count": len(valid_urls)
+                }
+
+        # Normalize and clean single URL
+        page_url = re.sub(r"[\s\u200b\u200e\u200f\ufeff]+", "", raw_input)
         if not page_url:
             return {"source_url": "", "title": "Empty URL", "images": [], "count": 0, "error": "URL ว่างเปล่า กรุณากรอก URL"}
         if not page_url.startswith(("http://", "https://")):
@@ -178,30 +195,51 @@ class WebMangaCrawler:
         # General HTML scraping with multiple fallback strategies
         html = ""
         title = "Online Manga Reader"
-
         last_error = ""
-        for ua_index, ua in enumerate(USER_AGENTS):
-            headers = dict(DEFAULT_HEADERS)
-            headers["User-Agent"] = ua
-            try:
-                async with httpx.AsyncClient(
-                    headers=headers, timeout=self.timeout,
-                    follow_redirects=True, verify=False
-                ) as client:
-                    resp = await client.get(page_url)
-                    if resp.status_code == 200:
-                        html = resp.text
-                        break
-                    elif resp.status_code in (403, 503):
-                        last_error = f"Bot protection ({resp.status_code})"
-                        logger.warning(f"Bot protection on attempt {ua_index+1} ({resp.status_code}) for {page_url}")
-                        continue
-                    else:
-                        last_error = f"HTTP {resp.status_code}"
-            except Exception as e:
-                last_error = str(e)
-                logger.warning(f"Fetch attempt {ua_index+1} failed: {e}")
-                continue
+
+        # Strategy 1: curl_cffi with browser TLS impersonation (Bypasses Cloudflare & Bot protection)
+        if HAS_CURL_CFFI:
+            for impersonate_target in ["chrome124", "safari17_2", "chrome120"]:
+                try:
+                    headers = dict(DEFAULT_HEADERS)
+                    async with AsyncSession(impersonate=impersonate_target, timeout=int(self.timeout)) as session:
+                        resp = await session.get(page_url, headers=headers)
+                        if resp.status_code == 200 and resp.text:
+                            html = resp.text
+                            break
+                        elif resp.status_code in (403, 503):
+                            last_error = f"Bot protection ({resp.status_code})"
+                            logger.warning(f"curl_cffi ({impersonate_target}) got {resp.status_code} for {page_url}")
+                        else:
+                            last_error = f"HTTP {resp.status_code}"
+                except Exception as e:
+                    last_error = str(e)
+                    logger.warning(f"curl_cffi ({impersonate_target}) attempt failed: {e}")
+
+        # Strategy 2: Standard httpx fallback
+        if not html:
+            for ua_index, ua in enumerate(USER_AGENTS):
+                headers = dict(DEFAULT_HEADERS)
+                headers["User-Agent"] = ua
+                try:
+                    async with httpx.AsyncClient(
+                        headers=headers, timeout=self.timeout,
+                        follow_redirects=True, verify=False
+                    ) as client:
+                        resp = await client.get(page_url)
+                        if resp.status_code == 200:
+                            html = resp.text
+                            break
+                        elif resp.status_code in (403, 503):
+                            last_error = f"Bot protection ({resp.status_code})"
+                            logger.warning(f"Bot protection on attempt {ua_index+1} ({resp.status_code}) for {page_url}")
+                            continue
+                        else:
+                            last_error = f"HTTP {resp.status_code}"
+                except Exception as e:
+                    last_error = str(e)
+                    logger.warning(f"Fetch attempt {ua_index+1} failed: {e}")
+                    continue
 
         if not html:
             return {
@@ -291,7 +329,7 @@ class WebMangaCrawler:
         }
 
     async def fetch_image_bytes(self, image_url: str, referer: Optional[str] = None) -> bytes:
-        """Downloads image bytes from URL with proper Referer headers to bypass hotlinking protection."""
+        """Downloads image bytes from URL with proper Referer headers and TLS impersonation to bypass hotlinking protection."""
         headers = dict(DEFAULT_HEADERS)
         parsed = urlparse(image_url)
         if not referer:
@@ -303,7 +341,18 @@ class WebMangaCrawler:
                 referer = f"{parsed.scheme}://{parsed.netloc}/"
         headers["Referer"] = referer
         headers["Accept"] = "image/webp,image/apng,image/*,*/*;q=0.8"
-        # Remove browser-specific headers for image requests
+
+        # Try curl_cffi first for browser TLS impersonation
+        if HAS_CURL_CFFI:
+            try:
+                async with AsyncSession(impersonate="chrome124", timeout=int(self.timeout)) as session:
+                    resp = await session.get(image_url, headers=headers)
+                    if resp.status_code == 200 and resp.content:
+                        return resp.content
+            except Exception as e:
+                logger.warning(f"curl_cffi fetch_image_bytes failed: {e}, falling back to httpx")
+
+        # Fallback to standard httpx
         for k in ["Sec-Fetch-Dest", "Sec-Fetch-Mode", "Upgrade-Insecure-Requests"]:
             headers.pop(k, None)
         headers["Sec-Fetch-Dest"] = "image"

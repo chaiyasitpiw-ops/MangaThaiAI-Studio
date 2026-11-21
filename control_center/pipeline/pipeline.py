@@ -267,6 +267,14 @@ class ZeroTrainingMangaPipeline:
             raise ValueError(f"Could not load image at {image_path}")
 
         h, w = image_bgr.shape[:2]
+        
+        # Optimize memory: downscale oversized manga scans (e.g. >1200px) to prevent cloud memory overflow
+        if w > 1200:
+            scale = 1000.0 / float(w)
+            new_w = 1000
+            new_h = int(h * scale)
+            image_bgr = cv2.resize(image_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            h, w = new_h, new_w
         bubble_data = []
 
         # 1. OCR Text Detection & Grouping
