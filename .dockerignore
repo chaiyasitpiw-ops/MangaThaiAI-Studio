@@ -6,7 +6,6 @@ __pycache__
 .gitignore
 *.log
 cloudflared.exe
-data/outputs/cache/*.json
 test_*.png
 test_*.py
 debug_*.py
