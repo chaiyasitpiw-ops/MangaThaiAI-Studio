@@ -1802,6 +1802,31 @@ async def dashboard():
                 if (!str) return '';
                 return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
+
+            // ── Mobile / Cross-Window Image Receiver (from Bookmarklet / Share) ──
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'MANGATHAI_LOAD_IMAGES') {
+                    const payload = event.data.data;
+                    if (payload && payload.images && payload.images.length > 0) {
+                        fetchedWebImages = payload.images;
+                        inspectTitle.innerText = payload.title || 'ตอนมังงะ/เว็บตูน';
+                        inspectPageCount.innerText = payload.images.length;
+                        inspectPageCountBtn.innerText = payload.images.length;
+                        inspectSubtitle.innerHTML = `✅ ตรวจพบทั้งหมด <b style="color:#34d399; font-size:15px;">${payload.images.length}</b> หน้า พร้อมแปลทันที`;
+                        if (payload.tone) {
+                            const toneEl = document.getElementById('mangaTone');
+                            if (toneEl) toneEl.value = payload.tone;
+                        }
+                        if (payload.source_lang) {
+                            const langEl = document.getElementById('sourceLang');
+                            if (langEl) langEl.value = payload.source_lang;
+                        }
+                        renderPagesIntoReader(payload.images);
+                        document.getElementById('webReaderSection').style.display = 'block';
+                        showNotification(`✅ โหลดมังงะ ${payload.images.length} หน้า จากมือถือสำเร็จ!`, 'success');
+                    }
+                }
+            });
         </script>
     </body>
     <script>

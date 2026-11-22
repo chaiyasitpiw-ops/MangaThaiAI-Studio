@@ -21,10 +21,13 @@ cache/
 *.log
 
 # AI Model weights & checkpoints
-models/
+/models/
+!assets/models/
+!assets/models/**
 *.pt
 *.pth
 *.onnx
+!assets/models/*.onnx
 *.bin
 *.safetensors
 *.gguf

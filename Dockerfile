@@ -45,4 +45,4 @@ USER user
 EXPOSE 7860
 
 # Run FastAPI app dynamically on whatever PORT is assigned by the cloud platform
-CMD ["sh", "-c", "uvicorn control_center.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn control_center.app:app --host 0.0.0.0 --port ${PORT:-7860}"]
