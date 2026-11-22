@@ -581,8 +581,11 @@ async def dashboard():
                         <button class="btn btn-success" onclick="fetchAndReadWebManga(true)" title="เช็คหน้าและแปลภาษาไทยครบทุกหน้าทันที">
                             ⚡ กดแปลทั้งหมดทันที
                         </button>
+                        <button class="btn btn-primary" style="background:linear-gradient(135deg, #ec4899, #8b5cf6); border:none; color:white; font-weight:700; box-shadow:0 2px 10px rgba(236,72,153,0.3);" onclick="pasteFromIPhoneClipboard()" title="แตะเพื่อวางรูปภาพ หรือ URL จากคลิปบอร์ด iPhone ทันที">
+                            📋 วางภาพจากคลิปบอร์ด iPhone
+                        </button>
                         <button class="btn btn-outline" style="border-color:#10b981; color:#34d399;" onclick="document.getElementById('fileUploadInput').click()" title="อัปโหลดรูปภาพมังงะจากเครื่อง หรือกด Ctrl+V เพื่อวางรูปภาพได้ทันที">
-                            📁 อัปโหลดรูป / วางภาพ (Ctrl+V)
+                            📁 อัปโหลดรูป / ถ่ายภาพ (Photos)
                         </button>
                         <input type="file" id="fileUploadInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this.files)">
                     </div>
@@ -872,60 +875,61 @@ async def dashboard():
 
             <!-- ================= CATEGORY 3: IPHONE / IPAD ================= -->
             <div id="tab-ios" class="tab-content" style="display:none;">
-                <!-- Step-by-Step PWA Installation Guide -->
-                <div class="card">
+                <!-- Fast 3 Methods for iPhone -->
+                <div class="card" style="border-color:#ec4899;">
                     <h2 style="margin-top:0; font-size:18px; display:flex; align-items:center; gap:8px;">
-                        <span>📱</span> ติดตั้งเป็นแอปบน iPhone / iPad (ไม่ต้องผ่าน App Store)
-                    </h2>
-                    <p style="color:var(--text-muted); font-size:13px;">
-                        คุณสามารถเพิ่มเว็บนี้เป็นแอปบนหน้าจอโฮมเพื่อเปิดอ่านแบบเต็มหน้าจอ (Standalone Fullscreen) ได้ทันที:
-                    </p>
-
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:16px;">
-                        <div class="step-card">
-                            <div style="display:flex; align-items:center; margin-bottom:10px;">
-                                <span class="step-badge">1</span>
-                                <b style="color:#fff; font-size:15px;">เปิด Safari บน iPhone/iPad</b>
-                            </div>
-                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
-                                เข้าสู่ URL: <b style="color:#38bdf8;">https://mangathaiai-studio.onrender.com</b> ผ่านเบราว์เซอร์ Safari
-                            </p>
-                        </div>
-                        <div class="step-card">
-                            <div style="display:flex; align-items:center; margin-bottom:10px;">
-                                <span class="step-badge">2</span>
-                                <b style="color:#fff; font-size:15px;">กดปุ่ม Share (แชร์)</b>
-                            </div>
-                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
-                                แตะไอคอน <b style="color:#fff;">Share (กล่องสี่เหลี่ยมลูกศรชี้ขึ้น)</b> ที่แถบเมนูด้านล่างของ Safari
-                            </p>
-                        </div>
-                        <div class="step-card">
-                            <div style="display:flex; align-items:center; margin-bottom:10px;">
-                                <span class="step-badge">3</span>
-                                <b style="color:#fff; font-size:15px;">Add to Home Screen</b>
-                            </div>
-                            <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
-                                เลื่อนลงมาเลือก <b style="color:#fff;">"Add to Home Screen"</b> (เพิ่มไปยังหน้าจอโฮม) แล้วกด <b style="color:#10b981;">Add</b>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Safari Bookmarklet Section -->
-                <div class="card">
-                    <h2 style="margin-top:0; font-size:18px; display:flex; align-items:center; gap:8px;">
-                        <span>📌</span> บุ๊กมาร์กแปลสดบนทุกเว็บมังงะ (In-Browser Bookmarklet)
+                        <span>📱</span> 3 วิธีใช้งานบน iPhone ที่ง่ายที่สุด (เลือกวิธีที่สะดวกได้เลย)
                     </h2>
                     <p style="color:var(--text-muted); font-size:13px; line-height:1.6;">
-                        กดแปลหน้าเว็บมังงะใดๆ ในโลกได้ทันทีขณะเปิดดูเว็บนั้น เพียงคัดลอกโค้ด Bookmarklet ด้านล่างนี้:
+                        ไม่ต้องเปิดคอมทิ้งไว้ ระบบคลาวด์ทำงาน 24 ชั่วโมงฟรี! บน iPhone คุณสามารถเลือกแปลได้ 3 รูปแบบตามความสะดวก:
                     </p>
-                    <div style="background:#090d16; border:2px dashed #4f46e5; border-radius:12px; padding:22px; text-align:center; margin:16px 0;">
-                        <button class="btn btn-success" style="font-size:15px; padding:12px 24px;" onclick="copyBookmarkletCode()">
-                            📋 กดเพื่อคัดลอกโค้ด Bookmarklet (1-Click Copy)
-                        </button>
-                        <p style="margin-top:14px; font-size:12px; color:var(--text-muted); line-height:1.6; max-width:600px; margin-left:auto; margin-right:auto;">
-                            💡 <b>วิธีใส่ใน Safari:</b> บุ๊กมาร์กหน้าอะไรก็ได้ใน Safari → กดแก้ไข (Edit) → เปลี่ยนชื่อเป็น "⚡ แปลมังงะไทย" → วางโค้ดที่คัดลอกนี้ลงในช่อง URL
+
+                    <!-- Method 1: Copy Image & 1-Tap Paste -->
+                    <div style="background:#13112c; border:1px solid #a855f7; border-radius:12px; padding:16px; margin-top:14px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="background:#ec4899; color:white; font-size:12px; font-weight:800; padding:2px 8px; border-radius:6px;">วิธีที่ 1 (ง่ายสุด 0 การตั้งค่า)</span>
+                            <b style="color:#f472b6; font-size:15px;">แตะค้างที่รูปในเว็บมังงะ ➡️ คัดลอก ➡️ วางแปลทันที</b>
+                        </div>
+                        <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0 0 10px;">
+                            เวลาเปิดอ่านมังงะใน Safari แล้วเจอหน้าที่อยากอ่านเป็นภาษาไทย:
+                        </p>
+                        <ol style="color:#94a3b8; font-size:12px; line-height:1.8; margin:0; padding-left:20px;">
+                            <li><b>แตะค้างที่รูปภาพมังงะ</b> ใน Safari ➡️ แตะเลือก <b>"คัดลอก (Copy)"</b></li>
+                            <li>สลับมาที่หน้า MangaThaiAI นี้ ➡️ แตะปุ่มสีชมพู <b>"📋 วางภาพจากคลิปบอร์ด iPhone"</b></li>
+                            <li>AI แปลงตัวหนังสือเกาหลี/ญี่ปุ่น เป็นภาษาไทย 18+ ฟอนต์การ์ตูนให้ทันทีใน 1-2 วินาที!</li>
+                        </ol>
+                    </div>
+
+                    <!-- Method 2: Safari 1-Second Shortcut ("แปล") -->
+                    <div style="background:#09192c; border:1px solid #0284c7; border-radius:12px; padding:16px; margin-top:14px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="background:#0284c7; color:white; font-size:12px; font-weight:800; padding:2px 8px; border-radius:6px;">วิธีที่ 2 (แปลทั้งตอน 89 หน้า)</span>
+                            <b style="color:#38bdf8; font-size:15px;">สูตรลัด Safari: พิมพ์คำว่า "แปล" ในช่อง URL</b>
+                        </div>
+                        <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0 0 10px;">
+                            เปิดเว็บมังงะใดๆ ใน Safari (เช่น NewXtoon) แล้วแปลไทยได้ทันทีทั้ง 89 หน้าโดยไม่ต้องออกจากหน้าเว็บ:
+                        </p>
+                        <div style="background:#0b1329; border:1px dashed #38bdf8; border-radius:8px; padding:14px; text-align:center; margin-bottom:10px;">
+                            <button class="btn btn-primary" style="font-size:14px; padding:10px 20px;" onclick="copyBookmarkletCode()">
+                                📋 1. กดที่นี่เพื่อคัดลอกโค้ด Bookmarklet
+                            </button>
+                            <div style="font-size:11px; color:#94a3b8; margin-top:8px;">
+                                2. ใน Safari: บุ๊กมาร์กหน้านี้ไว้ ➡️ กดแก้ไข (Edit) ➡️ ตั้งชื่อว่า <b>แปล</b> ➡️ วางโค้ดลงในช่อง URL
+                            </div>
+                        </div>
+                        <div style="font-size:12px; color:#6ee7b7; background:#064e3b; padding:8px 12px; border-radius:6px; line-height:1.5;">
+                            ✨ <b>วิธีใช้จริง:</b> เวลาอ่านมังงะใน Safari แตะที่ช่องพิมพ์ URL ด้านล่าง ➡️ พิมพ์คำว่า <b>แปล</b> ➡️ แตะที่บุ๊กมาร์ก แถบแปลภาษาจะลอยขึ้นมาแปลทั้ง 89 หน้าทันที!
+                        </div>
+                    </div>
+
+                    <!-- Method 3: PWA Add to Home Screen -->
+                    <div style="background:#0d1b1e; border:1px solid #059669; border-radius:12px; padding:16px; margin-top:14px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="background:#059669; color:white; font-size:12px; font-weight:800; padding:2px 8px; border-radius:6px;">วิธีที่ 3 (แอปเต็มจอ)</span>
+                            <b style="color:#34d399; font-size:15px;">ติดตั้งเป็นแอปเต็มจอ (Add to Home Screen)</b>
+                        </div>
+                        <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin:0;">
+                            แตะไอคอน <b>แชร์ (สี่เหลี่ยมลูกศรชี้ขึ้น ⬆️)</b> ที่แถบเมนู Safari ➡️ เลื่อนลงเลือก <b>"เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)"</b> ➡️ กด Add จะได้ไอคอนแอปบนหน้าจอมือถือ เปิดอ่านได้เต็มจอไร้ขอบ Safari
                         </p>
                     </div>
                 </div>
@@ -1546,6 +1550,54 @@ async def dashboard():
                     };
                     reader.readAsDataURL(file);
                 });
+            }
+
+            // ── iPhone 1-Tap Clipboard Paste ─────────────────────────────
+            async function pasteFromIPhoneClipboard() {
+                try {
+                    if (navigator.clipboard && navigator.clipboard.read) {
+                        try {
+                            const clipboardItems = await navigator.clipboard.read();
+                            const imageFiles = [];
+                            for (const item of clipboardItems) {
+                                for (const type of item.types) {
+                                    if (type.startsWith('image/')) {
+                                        const blob = await item.getType(type);
+                                        imageFiles.push(new File([blob], "iphone_pasted.png", { type: type }));
+                                    }
+                                }
+                            }
+                            if (imageFiles.length > 0) {
+                                showNotification('📋 โหลดรูปภาพจากคลิปบอร์ด iPhone สำเร็จ!', 'success');
+                                handleFileUpload(imageFiles);
+                                return;
+                            }
+                        } catch(clipErr) {
+                            console.log('Clipboard image read error, falling back to text:', clipErr);
+                        }
+                    }
+
+                    if (navigator.clipboard && navigator.clipboard.readText) {
+                        const text = await navigator.clipboard.readText();
+                        if (text && text.trim()) {
+                            const cleanText = text.trim();
+                            if (cleanText.startsWith('http://') || cleanText.startsWith('https://')) {
+                                document.getElementById('webUrlInput').value = cleanText;
+                                showNotification('📋 วาง URL จากคลิปบอร์ด iPhone เรียบร้อย!', 'success');
+                                checkAllWebtoonPages();
+                                return;
+                            } else if (cleanText.includes('<img') || cleanText.includes('http')) {
+                                document.getElementById('rawHtmlInput').value = cleanText;
+                                toggleHtmlPasteDrawer();
+                                extractAndReadFromPastedHtml();
+                                return;
+                            }
+                        }
+                    }
+                    showNotification('💡 คุณสามารถแตะค้างในช่อง URL แล้วกด "วาง (Paste)" ได้เลยครับ', 'info');
+                } catch(e) {
+                    showNotification('💡 แตะค้างที่ช่อง URL แล้วกด "วาง (Paste)" เพื่อแปลได้ทันที', 'info');
+                }
             }
 
             // Clipboard Paste support (Ctrl+V)
