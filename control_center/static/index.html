@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>MangaThai AI - แปลมังงะ/มันฮวาไทย 24 ชม.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&family=Mali:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d16;
+            --card: #0f172a;
+            --border: #1e293b;
+            --primary: #6366f1;
+            --success: #10b981;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 12px;
+            min-height: 100vh;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        /* Header */
+        header {
+            text-align: center;
+            padding: 18px 0 14px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .badge-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Card */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        /* Input & Buttons */
+        .input-box {
+            width: 100%;
+            background: #131b2e;
+            border: 1px solid #334155;
+            color: #fff;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-box:focus { border-color: var(--primary); }
+
+        .btn-main {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+            transition: transform 0.1s, opacity 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* Quick Pills */
+        .quick-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .pill {
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .pill:active { transform: scale(0.95); }
+        .pill.red {
+            background: #450a0a;
+            border-color: #ef4444;
+            color: #fca5a5;
+            font-weight: 700;
+        }
+        .pill.blue {
+            background: #082f49;
+            border-color: #0284c7;
+            color: #7dd3fc;
+        }
+
+        /* Settings row */
+        .settings-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .select-box {
+            width: 100%;
+            background: #131b2e;
+            border: 1px solid #334155;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        /* Status Bar */
+        #statusBar {
+            background: #0c192c;
+            border: 1px solid #2563eb;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .progress-track {
+            width: 100%;
+            background: #1e293b;
+            border-radius: 999px;
+            height: 6px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        /* Reader Pages */
+        .page-item {
+            margin-bottom: 8px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #1e293b;
+        }
+        .page-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            background: #0f172a;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .page-btn {
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid #475569;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .page-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="title">
+                <span>🎨</span> MangaThai AI
+                <span class="badge-online">24H Online</span>
+            </div>
+            <div class="subtitle">แปลมังงะ/มันฮวา 18+ ภาษาไทยอัตโนมัติ (เกาหลี • รัสเซีย • อังกฤษ • จีน)</div>
+        </header>
+
+        <!-- Main Control Card -->
+        <div class="card">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <input type="text" id="webUrlInput" class="input-box" 
+                       value="https://newxtoon5.com/comics/17962/chapters/1080367"
+                       placeholder="วางลิงก์มังงะ เช่น https://newxtoon5.com/..."
+                       onkeydown="if(event.key === 'Enter') fetchAndReadWebManga(true)">
+
+                <button id="btnMain" class="btn-main" onclick="fetchAndReadWebManga(true)">
+                    ⚡ กดแปลและเปิดอ่านทันที (1-Click Read)
+                </button>
+            </div>
+
+            <!-- Quick Chapter Selection -->
+            <div class="quick-row">
+                <span style="font-size:11px; color:#94a3b8; font-weight:700;">📚 ตอนยอดนิยม (แตะปุ๊บอ่านเลย):</span>
+                <a class="pill red" onclick="loadQuickUrl('newxtoon_18')">🔞 NewXtoon 18+ ตอน 24 (졸업 후 반 친구들을 다 따먹음)</a>
+                <a class="pill blue" onclick="loadQuickUrl('overgeared')">⚡ Overgeared ตอน 343</a>
+                <a class="pill" onclick="loadQuickUrl('sololeveling')">⚔️ Solo Leveling</a>
+            </div>
+
+            <!-- Language & Tone Options -->
+            <div class="settings-row">
+                <div>
+                    <label style="font-size:11px; color:#94a3b8; display:block; margin-bottom:4px;">🌐 ภาษาต้นฉบับ:</label>
+                    <select id="sourceLangSelect" class="select-box">
+                        <option value="kr" selected>🇰🇷 เกาหลี (Korean Manhwa)</option>
+                        <option value="ru">🇷🇺 รัสเซีย (Russian)</option>
+                        <option value="en">🇺🇸 อังกฤษ (English)</option>
+                        <option value="cn">🇨🇳 จีน (Chinese)</option>
+                        <option value="auto">🌐 อัตโนมัติ (Auto)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px; color:#94a3b8; display:block; margin-bottom:4px;">🎭 โทนสำนวน:</label>
+                    <select id="globalToneSelect" class="select-box">
+                        <option value="adult_18" selected>🔞 มังงะ 18+ (เสียว, ถึงอารมณ์)</option>
+                        <option value="shonen">⚔️ โชเน็น (แก, ข้า, ลุย)</option>
+                        <option value="casual">💬 เป็นกันเอง</option>
+                        <option value="standard">🌸 ทั่วไป / สุภาพ</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Indicator -->
+        <div id="statusBar">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b id="statusTitle" style="color:#60a5fa; font-size:13px;">⏳ กำลังโหลดรูปภาพ...</b>
+                <span id="statusCounter" style="color:#34d399; font-weight:700; font-size:12px;">0 หน้า</span>
+            </div>
+            <div class="progress-track">
+                <div id="progressBarFill" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Manga Reader Pages -->
+        <div id="readerSection" style="display:none;">
+            <div id="pagesContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let fetchedWebImages = [];
+        let isTranslating = false;
+
+        function loadQuickUrl(type) {
+            const input = document.getElementById('webUrlInput');
+            if (type === 'newxtoon_18') {
+                input.value = 'https://newxtoon5.com/comics/17962/chapters/1080367';
+                document.getElementById('sourceLangSelect').value = 'kr';
+                document.getElementById('globalToneSelect').value = 'adult_18';
+            } else if (type === 'overgeared') {
+                input.value = 'https://asurascans.com/comics/overgeared-1bb35e56/chapter/343';
+                document.getElementById('sourceLangSelect').value = 'en';
+            } else if (type === 'sololeveling') {
+                input.value = 'https://asurascans.com/comics/solo-leveling/chapter/1';
+                document.getElementById('sourceLangSelect').value = 'en';
+            }
+            fetchAndReadWebManga(true);
+        }
+
+        async function fetchAndReadWebManga(autoStart = true) {
+            const input = document.getElementById('webUrlInput');
+            let url = (input.value || '').trim();
+            if (!url) {
+                alert('กรุณากรอกหรือวางลิงก์มังงะก่อนครับ');
+                return;
+            }
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+                input.value = url;
+            }
+
+            const statusBar = document.getElementById('statusBar');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusCounter = document.getElementById('statusCounter');
+            const progressBar = document.getElementById('progressBarFill');
+            const readerSec = document.getElementById('readerSection');
+            const btnMain = document.getElementById('btnMain');
+
+            statusBar.style.display = 'block';
+            statusTitle.innerText = '⏳ กำลังดึงรูปภาพมังงะ...';
+            statusCounter.innerText = 'กำลังโหลด';
+            progressBar.style.width = '15%';
+            btnMain.disabled = true;
+            btnMain.style.opacity = '0.7';
+
+            try {
+                const res = await fetch('/api/fetch-webpage-manga', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await res.json();
+
+                if (data.images && data.images.length > 0) {
+                    fetchedWebImages = data.images;
+                    statusTitle.innerText = `📖 ${data.title || 'ตอนมังงะ'}`;
+                    statusCounter.innerText = `0 / ${data.images.length} หน้า`;
+                    progressBar.style.width = '25%';
+
+                    renderPages(data.images);
+                    readerSec.style.display = 'block';
+
+                    setTimeout(() => {
+                        readerSec.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+
+                    if (autoStart) {
+                        startTranslationQueue();
+                    }
+                } else {
+                    statusTitle.innerHTML = `<span style="color:#f87171;">⚠️ ${data.error || 'ไม่พบรูปภาพในลิงก์นี้'}</span>`;
+                    statusCounter.innerText = 'ล้มเหลว';
+                    progressBar.style.width = '0%';
+                    btnMain.disabled = false;
+                    btnMain.style.opacity = '1';
+                }
+            } catch (e) {
+                statusTitle.innerHTML = `<span style="color:#f87171;">⚠️ เกิดข้อผิดพลาด: ${e}</span>`;
+                btnMain.disabled = false;
+                btnMain.style.opacity = '1';
+            }
+        }
+
+        function renderPages(images) {
+            const container = document.getElementById('pagesContainer');
+            container.innerHTML = '';
+            images.forEach((imgUrl, idx) => {
+                const div = document.createElement('div');
+                div.className = 'page-item';
+                div.id = 'pageCard_' + idx;
+                div.innerHTML = `
+                    <div class="page-bar">
+                        <span>หน้า ${idx + 1} / ${images.length}</span>
+                        <span id="badge_${idx}">ต้นฉบับ</span>
+                        <button class="page-btn" onclick="toggleView(${idx})">👁 สลับดูต้นฉบับ / แปลไทย</button>
+                    </div>
+                    <img id="mangaImg_${idx}" class="page-img" src="${imgUrl}" data-original="${imgUrl}" alt="หน้า ${idx + 1}" loading="lazy">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function startTranslationQueue() {
+            if (isTranslating) return;
+            isTranslating = true;
+            const tone = document.getElementById('globalToneSelect').value || 'adult_18';
+            const lang = document.getElementById('sourceLangSelect').value || 'kr';
+            const statusTitle = document.getElementById('statusTitle');
+            const statusCounter = document.getElementById('statusCounter');
+            const progressBar = document.getElementById('progressBarFill');
+            const btnMain = document.getElementById('btnMain');
+
+            let count = 0;
+            for (let i = 0; i < fetchedWebImages.length; i++) {
+                statusTitle.innerText = `⚡ กำลังแปลหน้า ${i + 1} / ${fetchedWebImages.length}...`;
+                statusCounter.innerText = `${count} / ${fetchedWebImages.length} หน้า`;
+                progressBar.style.width = `${Math.round((count / fetchedWebImages.length) * 100)}%`;
+
+                await translatePage(i, fetchedWebImages[i], tone, lang);
+                count++;
+                statusCounter.innerText = `${count} / ${fetchedWebImages.length} หน้า`;
+                progressBar.style.width = `${Math.round((count / fetchedWebImages.length) * 100)}%`;
+            }
+
+            statusTitle.innerHTML = `✅ แปลครบทั้งหมด <b style="color:#34d399;">${fetchedWebImages.length}</b> หน้าเรียบร้อย!`;
+            progressBar.style.width = '100%';
+            isTranslating = false;
+            btnMain.disabled = false;
+            btnMain.style.opacity = '1';
+        }
+
+        async function translatePage(idx, imgUrl, tone, lang) {
+            const imgEl = document.getElementById('mangaImg_' + idx);
+            const badgeEl = document.getElementById('badge_' + idx);
+            if (badgeEl) badgeEl.innerText = '⏳ กำลังแปล...';
+
+            try {
+                const res = await fetch('/api/translate-image-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_url: imgUrl,
+                        page_index: idx,
+                        tone: tone,
+                        source_lang: lang
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success' && data.result_b64) {
+                    let finalSrc = data.result_b64;
+                    if (!finalSrc.startsWith('data:')) {
+                        finalSrc = (finalSrc.startsWith('/9j/') ? 'data:image/jpeg;base64,' : 'data:image/png;base64,') + finalSrc;
+                    }
+                    if (imgEl) {
+                        imgEl.src = finalSrc;
+                        imgEl.dataset.translated = finalSrc;
+                    }
+                    if (badgeEl) {
+                        badgeEl.innerHTML = `<span style="color:#34d399; font-weight:700;">✓ แปลไทยแล้ว</span>`;
+                    }
+                } else {
+                    if (badgeEl) badgeEl.innerText = 'ต้นฉบับ';
+                }
+            } catch (e) {
+                if (badgeEl) badgeEl.innerText = 'ต้นฉบับ';
+            }
+        }
+
+        function toggleView(idx) {
+            const imgEl = document.getElementById('mangaImg_' + idx);
+            const badgeEl = document.getElementById('badge_' + idx);
+            if (!imgEl) return;
+            if (imgEl.dataset.translated && imgEl.src === imgEl.dataset.translated) {
+                imgEl.src = imgEl.dataset.original;
+                if (badgeEl) badgeEl.innerHTML = `<span>ต้นฉบับ</span>`;
+            } else if (imgEl.dataset.translated) {
+                imgEl.src = imgEl.dataset.translated;
+                if (badgeEl) badgeEl.innerHTML = `<span style="color:#34d399; font-weight:700;">✓ แปลไทย</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
