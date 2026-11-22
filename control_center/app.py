@@ -567,37 +567,34 @@ async def dashboard():
                     </div>
 
                     <!-- URL Input & Action Buttons -->
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <input type="text" id="webUrlInput" class="input-text" style="flex:1; min-width:280px;" 
-                               placeholder="วางลิงก์ เช่น https://newxtoon5.com/comics/358/chapters/1080994">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <input type="text" id="webUrlInput" class="input-text" style="flex:1; min-width:260px; font-size:14px; padding:12px 16px; border-radius:10px; border:1px solid #4f46e5;" 
+                               placeholder="วางลิงก์มังงะ/เว็บตูน เช่น https://newxtoon5.com/comics/17962/chapters/1080367"
+                               onkeydown="if(event.key === 'Enter') fetchAndReadWebManga(true)">
                         
-                        <!-- Action Buttons -->
-                        <button class="btn btn-outline" style="border-color:#38bdf8; color:#38bdf8;" onclick="openSourceWebpage()" title="เปิดดูหน้าเว็บต้นฉบับในแท็บใหม่ทันที">
-                            🌐 เปิดหน้าเว็บต้นฉบับ
+                        <!-- 1-Click Instant Read Button -->
+                        <button class="btn btn-success" style="font-size:15px; font-weight:800; padding:12px 24px; border-radius:10px; background:linear-gradient(135deg, #10b981, #059669); box-shadow:0 4px 15px rgba(16,185,129,0.4);" onclick="fetchAndReadWebManga(true)" title="กดแปลและเปิดอ่านทันที">
+                            ⚡ กดแปลและอ่านทันที (1-Click)
                         </button>
-                        <button class="btn btn-outline" style="border-color:#a855f7; color:#c084fc;" onclick="checkAllWebtoonPages()" title="เช็คจำนวนหน้าทั้งหมดในตอนนี้">
-                            🔍 เช็คหน้าทั้งหมด
+                        <button class="btn btn-primary" style="background:linear-gradient(135deg, #ec4899, #8b5cf6); border:none; color:white; font-weight:700; padding:12px 18px; border-radius:10px; box-shadow:0 2px 10px rgba(236,72,153,0.3);" onclick="pasteFromIPhoneClipboard()" title="แตะเพื่อวางรูปภาพ หรือ URL จากคลิปบอร์ด iPhone ทันที">
+                            📋 วางจากคลิปบอร์ด
                         </button>
-                        <button class="btn btn-success" onclick="fetchAndReadWebManga(true)" title="เช็คหน้าและแปลภาษาไทยครบทุกหน้าทันที">
-                            ⚡ กดแปลทั้งหมดทันที
+                        <button class="btn btn-outline" style="border-color:#38bdf8; color:#38bdf8; padding:10px 14px; border-radius:10px;" onclick="openSourceWebpage()" title="เปิดดูหน้าเว็บต้นฉบับในแท็บใหม่ทันที">
+                            🌐 เปิดเว็บต้นฉบับ
                         </button>
-                        <button class="btn btn-primary" style="background:linear-gradient(135deg, #ec4899, #8b5cf6); border:none; color:white; font-weight:700; box-shadow:0 2px 10px rgba(236,72,153,0.3);" onclick="pasteFromIPhoneClipboard()" title="แตะเพื่อวางรูปภาพ หรือ URL จากคลิปบอร์ด iPhone ทันที">
-                            📋 วางภาพจากคลิปบอร์ด iPhone
-                        </button>
-                        <button class="btn btn-outline" style="border-color:#10b981; color:#34d399;" onclick="document.getElementById('fileUploadInput').click()" title="อัปโหลดรูปภาพมังงะจากเครื่อง หรือกด Ctrl+V เพื่อวางรูปภาพได้ทันที">
-                            📁 อัปโหลดรูป / ถ่ายภาพ (Photos)
+                        <button class="btn btn-outline" style="border-color:#10b981; color:#34d399; padding:10px 14px; border-radius:10px;" onclick="document.getElementById('fileUploadInput').click()" title="อัปโหลดรูปภาพมังงะจากเครื่อง">
+                            📁 อัปโหลดรูป (Photos)
                         </button>
                         <input type="file" id="fileUploadInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this.files)">
                     </div>
 
                     <!-- Quick Shortcuts / Tag Pills -->
                     <div style="margin-top:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="font-size:12px; color:var(--text-muted); font-weight:600;">⚡ ตอนทดสอบด่วน:</span>
-                        <a class="tag-pill" style="border-color:#ef4444; color:#fca5a5; font-weight:700; background:#450a0a;" onclick="loadQuickUrl('newxtoon_18')">🔞 NewXtoon 18+ ตอน 24 (졸업 후 반 친구들을 다 따먹음)</a>
-                        <a class="tag-pill" style="border-color:#a855f7; color:#d8b4fe;" onclick="loadQuickUrl('newxtoon')">🇰🇷 NewxToon ตอน 120 (75 หน้า)</a>
-                        <a class="tag-pill" onclick="loadQuickUrl('overgeared')">⚡ Overgeared ตอน 343 (Asura)</a>
-                        <a class="tag-pill" onclick="loadQuickUrl('sololeveling')">⚔️ Solo Leveling</a>
-                        <a class="tag-pill" onclick="loadQuickUrl('demo')">🧪 ภาพทดสอบระบบ Demo</a>
+                        <span style="font-size:12px; color:var(--text-muted); font-weight:700;">📚 หรือเลือกตอนอ่านได้ทันที (คลิกเดียวแปลเลย):</span>
+                        <a class="tag-pill" style="border-color:#ef4444; color:#fca5a5; font-weight:700; background:#450a0a; padding:6px 14px; cursor:pointer;" onclick="loadQuickUrl('newxtoon_18')">🔞 NewXtoon 18+ ตอน 24 (졸업 후 반 친구들을 다 따먹음)</a>
+                        <a class="tag-pill" style="border-color:#0284c7; color:#38bdf8; padding:6px 14px; cursor:pointer;" onclick="loadQuickUrl('overgeared')">⚡ Overgeared ตอน 343</a>
+                        <a class="tag-pill" style="border-color:#8b5cf6; color:#c084fc; padding:6px 14px; cursor:pointer;" onclick="loadQuickUrl('sololeveling')">⚔️ Solo Leveling</a>
+                        <a class="tag-pill" style="padding:6px 14px; cursor:pointer;" onclick="loadQuickUrl('demo')">🧪 ภาพทดสอบระบบ Demo</a>
                     </div>
 
                     <!-- HTML Source / Direct Images Paste Box (Instant Cloudflare Bypass) -->
@@ -1310,31 +1307,31 @@ async def dashboard():
             function loadQuickUrl(type) {
                 const input = document.getElementById('webUrlInput');
                 switchTab('tab-webreader');
-                if (type === 'newxtoon_18') {
+                if (type === 'newxtoon_18' || type === 'newxtoon') {
                     input.value = 'https://newxtoon5.com/comics/17962/chapters/1080367';
-                    document.getElementById('globalToneSelect').value = 'adult_18';
-                    document.getElementById('sourceLangSelect').value = 'kr';
-                    checkAllWebtoonPages();
-                } else if (type === 'newxtoon') {
-                    input.value = 'https://newxtoon5.com/comics/17962/chapters/1080367';
-                    document.getElementById('globalToneSelect').value = 'adult_18';
-                    document.getElementById('sourceLangSelect').value = 'kr';
-                    checkAllWebtoonPages();
+                    const toneEl = document.getElementById('globalToneSelect');
+                    if (toneEl) toneEl.value = 'adult_18';
+                    const langEl = document.getElementById('sourceLangSelect');
+                    if (langEl) langEl.value = 'kr';
+                    fetchAndReadWebManga(true);
                 } else if (type === 'overgeared') {
                     input.value = 'https://asurascans.com/comics/overgeared-1bb35e56/chapter/343';
-                    document.getElementById('sourceLangSelect').value = 'en';
-                    checkAllWebtoonPages();
+                    const langEl = document.getElementById('sourceLangSelect');
+                    if (langEl) langEl.value = 'en';
+                    fetchAndReadWebManga(true);
                 } else if (type === 'sololeveling') {
                     input.value = 'https://asurascans.com/comics/solo-leveling/chapter/1';
-                    document.getElementById('sourceLangSelect').value = 'en';
-                    checkAllWebtoonPages();
+                    const langEl = document.getElementById('sourceLangSelect');
+                    if (langEl) langEl.value = 'en';
+                    fetchAndReadWebManga(true);
                 } else if (type === 'onepiece') {
                     input.value = 'https://mangaplus.shueisha.co.jp/viewer/1000001';
-                    document.getElementById('sourceLangSelect').value = 'en';
-                    checkAllWebtoonPages();
+                    const langEl = document.getElementById('sourceLangSelect');
+                    if (langEl) langEl.value = 'en';
+                    fetchAndReadWebManga(true);
                 } else if (type === 'demo') {
                     input.value = window.location.origin + '/static/sample_manga.png';
-                    checkAllWebtoonPages();
+                    fetchAndReadWebManga(true);
                 }
             }
 
@@ -1689,9 +1686,16 @@ async def dashboard():
                 }
             }
 
-            async function fetchAndReadWebManga(autoStartTranslate = false) {
+            async function fetchAndReadWebManga(autoStartTranslate = true) {
                 const ok = await checkAllWebtoonPages();
                 if (ok) {
+                    const readerEl = document.getElementById('webReaderSection');
+                    if (readerEl) {
+                        readerEl.style.display = 'block';
+                        setTimeout(() => {
+                            readerEl.scrollIntoView({ behavior: 'smooth' });
+                        }, 200);
+                    }
                     if (autoStartTranslate || document.getElementById('autoTranslateCheck').checked) {
                         startBatchTranslation();
                     }

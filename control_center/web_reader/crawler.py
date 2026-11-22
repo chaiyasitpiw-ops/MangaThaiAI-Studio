@@ -180,6 +180,19 @@ class WebMangaCrawler:
         if not page_url.startswith(("http://", "https://")):
             page_url = "https://" + page_url
 
+        # Check Persistent Chapter Cache first (Instant 0-second load for cached chapters)
+        cache_file = Path(__file__).resolve().parent.parent.parent / "data/chapter_cache.json"
+        if cache_file.exists():
+            try:
+                cached_data = json.loads(cache_file.read_text(encoding="utf-8"))
+                norm_key = page_url.rstrip("/")
+                for k, v in cached_data.items():
+                    if k.rstrip("/") == norm_key and v.get("images"):
+                        logger.info(f"Loaded chapter from cache: {page_url} ({len(v['images'])} images)")
+                        return v
+            except Exception as e:
+                logger.warning(f"Error reading chapter cache: {e}")
+
         # Direct image URL passthrough
         parsed = urlparse(page_url)
         path_lower = parsed.path.lower()
@@ -199,11 +212,10 @@ class WebMangaCrawler:
 
         # Strategy 1: curl_cffi with browser TLS impersonation (Bypasses Cloudflare & Bot protection)
         if HAS_CURL_CFFI:
-            for impersonate_target in ["chrome124", "safari17_2", "chrome120"]:
+            for impersonate_target in ["chrome124", "chrome131", "safari17_2_ios", "chrome120"]:
                 try:
-                    headers = dict(DEFAULT_HEADERS)
                     async with AsyncSession(impersonate=impersonate_target, timeout=int(self.timeout)) as session:
-                        resp = await session.get(page_url, headers=headers)
+                        resp = await session.get(page_url)
                         if resp.status_code == 200 and resp.text:
                             html = resp.text
                             break
@@ -325,21 +337,30 @@ class WebMangaCrawler:
         if len(large_images) >= 2:
             found_images = large_images
 
-        return {
+        res = {
             "source_url": page_url,
             "title": title,
             "images": found_images,
             "count": len(found_images),
         }
-        if len(large_images) >= 2:
-            found_images = large_images
 
-        return {
-            "source_url": page_url,
-            "title": title,
-            "images": found_images,
-            "count": len(found_images),
-        }
+        # Auto-save to persistent chapter cache if valid
+        if found_images and page_url:
+            try:
+                cache_file = Path(__file__).resolve().parent.parent.parent / "data/chapter_cache.json"
+                cache_file.parent.mkdir(parents=True, exist_ok=True)
+                cached_data = {}
+                if cache_file.exists():
+                    try:
+                        cached_data = json.loads(cache_file.read_text(encoding="utf-8"))
+                    except Exception:
+                        pass
+                cached_data[page_url] = res
+                cache_file.write_text(json.dumps(cached_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Failed to auto-save chapter cache: {e}")
+
+        return res
 
     async def fetch_image_bytes(self, image_url: str, referer: Optional[str] = None) -> bytes:
         """Downloads image bytes from URL with proper Referer headers and TLS impersonation to bypass hotlinking protection."""
