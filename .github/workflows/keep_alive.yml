@@ -1,0 +1,17 @@
+name: 24/7 Keep-Alive Pinger
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free instance from sleeping
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping MangaThaiAI Studio 24/7
+        run: |
+          echo "Pinging MangaThaiAI Studio on Render..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 https://mangathaiai-studio.onrender.com/health)
+          echo "Render Health Status: $STATUS"
