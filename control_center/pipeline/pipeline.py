@@ -392,19 +392,19 @@ class ZeroTrainingMangaPipeline:
             if active_ocr:
                 try:
                     ocr_results = []
-                    if h > 3200:
-                        # Webtoon tall vertical strip: slice into 2800px chunks
-                        chunk_h = 2800
-                        overlap = 150
+                    # Sliced / scaled OCR detection for webtoons and high-res manga scans
+                    if h > 2000:
+                        # Webtoon tall vertical strip: slice into 1600px chunks with fast scaling
+                        chunk_h = 1600
+                        overlap = 120
                         y = 0
-                        scale = 0.72
+                        scale = 0.8
                         inv_scale = 1.0 / scale
                         while y < h:
                             y_end = min(h, y + chunk_h)
                             crop = image_bgr[y:y_end, :]
                             ch, cw = crop.shape[:2]
 
-                            # Fast detection on downscaled slice
                             small_crop = cv2.resize(crop, (int(cw * scale), int(ch * scale)))
                             res, _ = active_ocr(small_crop)
                             if res:
@@ -414,19 +414,17 @@ class ZeroTrainingMangaPipeline:
                             if y_end >= h:
                                 break
                             y += chunk_h - overlap
+                    elif w > 900 or h > 1400:
+                        scale = min(1.0, 800.0 / float(w), 1400.0 / float(h))
+                        inv_scale = 1.0 / scale
+                        small_img = cv2.resize(image_bgr, (int(w * scale), int(h * scale)))
+                        res, _ = active_ocr(small_img)
+                        if res:
+                            for b, t, s in res:
+                                shifted_b = [[p[0] * inv_scale, p[1] * inv_scale] for p in b]
+                                ocr_results.append((shifted_b, t, s))
                     else:
-                        # Standard manga page
-                        if w > 1100:
-                            scale = 800.0 / float(w)
-                            inv_scale = 1.0 / scale
-                            small_img = cv2.resize(image_bgr, (800, int(h * scale)))
-                            res, _ = active_ocr(small_img)
-                            if res:
-                                for b, t, s in res:
-                                    shifted_b = [[p[0] * inv_scale, p[1] * inv_scale] for p in b]
-                                    ocr_results.append((shifted_b, t, s))
-                        else:
-                            ocr_results, _ = active_ocr(image_bgr)
+                        ocr_results, _ = active_ocr(image_bgr)
 
                     if ocr_results:
                         detected_items = self._group_ocr_boxes(ocr_results, h, w)
@@ -468,6 +466,19 @@ class ZeroTrainingMangaPipeline:
                 else:
                     bboxes = []
 
+        # FAST PATH: If no text bubbles were detected, skip inpainting, conversion, and typesetting completely!
+        if not bubble_data:
+            return {
+                "width": w,
+                "height": h,
+                "bboxes": [],
+                "bubbles": [],
+                "original_bgr": image_bgr,
+                "cleaned_bgr": None,
+                "result_pil": None,
+                "has_text": False,
+            }
+
         # 2. Text Inpainting (Clean original text)
         cleaned_bgr = self.inpainter.inpaint_bubbles(image_bgr, bboxes)
 
@@ -495,4 +506,5 @@ class ZeroTrainingMangaPipeline:
             "original_bgr": image_bgr,
             "cleaned_bgr": cleaned_bgr,
             "result_pil": result_pil,
+            "has_text": True,
         }

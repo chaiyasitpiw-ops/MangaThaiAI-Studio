@@ -63,6 +63,13 @@ pipeline = ZeroTrainingMangaPipeline()
 orchestrator = MangaOrchestrator()
 crawler = WebMangaCrawler()
 
+# Pre-warm Korean OCR engine to eliminate cold-start delay
+try:
+    pipeline.get_ocr_engine("kr")
+    logger.info("Korean OCR engine pre-warmed successfully.")
+except Exception as e:
+    logger.warning(f"Could not pre-warm Korean OCR engine: {e}")
+
 
 def pil_to_base64(img: Image.Image, format: str = "JPEG", quality: int = 85) -> str:
     buffered = io.BytesIO()
@@ -206,13 +213,19 @@ async def translate_image_url(req: TranslateImageUrlRequest):
                     tmp_path.unlink()
 
         elapsed = round(time.time() - t0, 2)
-        result_b64 = pil_to_base64(res["result_pil"], format="JPEG", quality=85)
+        has_text = res.get("has_text", True) and len(res.get("bubbles", [])) > 0
+        if has_text and res.get("result_pil"):
+            result_b64 = pil_to_base64(res["result_pil"], format="JPEG", quality=85)
+        else:
+            result_b64 = ""
+
         response_data = {
             "status": "success",
             "cached": False,
             "elapsed_seconds": elapsed,
-            "bubbles_count": len(res["bubbles"]),
-            "bubbles": res["bubbles"],
+            "has_text": has_text,
+            "bubbles_count": len(res.get("bubbles", [])),
+            "bubbles": res.get("bubbles", []),
             "cleaned_b64": "",  # Skipped to save 50% RAM & JSON network size
             "result_b64": result_b64,
         }

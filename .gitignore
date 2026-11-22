@@ -15,9 +15,11 @@ data/inputs/*
 !data/inputs/.gitkeep
 data/outputs/*
 !data/outputs/.gitkeep
+!data/outputs/cache/
+!data/outputs/cache/**
 data/cache/*
 !data/cache/.gitkeep
-cache/
+/cache/
 *.log
 
 # AI Model weights & checkpoints

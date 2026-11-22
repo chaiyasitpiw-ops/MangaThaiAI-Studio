@@ -370,10 +370,17 @@
         function renderPages(images) {
             const container = document.getElementById('pagesContainer');
             container.innerHTML = '';
+            pageStatus = {};
+            queue = [];
+            completedCount = 0;
+            activeWorkers = 0;
+
             images.forEach((imgUrl, idx) => {
+                pageStatus[idx] = 'idle';
                 const div = document.createElement('div');
                 div.className = 'page-item';
                 div.id = 'pageCard_' + idx;
+                div.dataset.index = idx;
                 div.innerHTML = `
                     <div class="page-bar">
                         <span>หน้า ${idx + 1} / ${images.length}</span>
@@ -384,41 +391,116 @@
                 `;
                 container.appendChild(div);
             });
+
+            setupIntersectionObserver();
         }
 
-        async function startTranslationQueue() {
+        let observer = null;
+        function setupIntersectionObserver() {
+            if (observer) observer.disconnect();
+            if (!('IntersectionObserver' in window)) return;
+
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const idx = parseInt(entry.target.dataset.index, 10);
+                        prioritizePage(idx);
+                    }
+                });
+            }, {
+                rootMargin: '1200px 0px 1200px 0px', // Pre-fetch 1200px ahead
+                threshold: 0.01
+            });
+
+            document.querySelectorAll('.page-item').forEach(el => observer.observe(el));
+        }
+
+        function prioritizePage(idx) {
+            if (pageStatus[idx] === 'done' || pageStatus[idx] === 'translating') return;
+            const existingIdx = queue.indexOf(idx);
+            if (existingIdx !== -1) {
+                queue.splice(existingIdx, 1);
+            }
+            queue.unshift(idx);
+            pageStatus[idx] = 'queued';
+            const badge = document.getElementById('badge_' + idx);
+            if (badge && pageStatus[idx] !== 'translating') {
+                badge.innerText = '⏳ อยู่ในคิว...';
+            }
+            processNextQueue();
+        }
+
+        let pageStatus = {};
+        let queue = [];
+        let activeWorkers = 0;
+        const MAX_CONCURRENCY = 2;
+        let completedCount = 0;
+
+        function startTranslationQueue() {
             if (isTranslating) return;
             isTranslating = true;
+            queue = [];
+            for (let i = 0; i < fetchedWebImages.length; i++) {
+                if (pageStatus[i] !== 'done') {
+                    queue.push(i);
+                    pageStatus[i] = 'queued';
+                }
+            }
+            for (let w = 0; w < MAX_CONCURRENCY; w++) {
+                processNextQueue();
+            }
+        }
+
+        async function processNextQueue() {
+            if (queue.length === 0) {
+                if (activeWorkers === 0 && completedCount >= fetchedWebImages.length) {
+                    const statusTitle = document.getElementById('statusTitle');
+                    const progressBar = document.getElementById('progressBarFill');
+                    const btnMain = document.getElementById('btnMain');
+                    if (statusTitle) statusTitle.innerHTML = `✅ แปลครบทั้งหมด <b style="color:#34d399;">${fetchedWebImages.length}</b> หน้าเรียบร้อย!`;
+                    if (progressBar) progressBar.style.width = '100%';
+                    isTranslating = false;
+                    if (btnMain) { btnMain.disabled = false; btnMain.style.opacity = '1'; }
+                }
+                return;
+            }
+
+            if (activeWorkers >= MAX_CONCURRENCY) return;
+
+            const idx = queue.shift();
+            if (pageStatus[idx] === 'done' || pageStatus[idx] === 'translating') {
+                processNextQueue();
+                return;
+            }
+
+            activeWorkers++;
+            pageStatus[idx] = 'translating';
+
             const tone = document.getElementById('globalToneSelect').value || 'adult_18';
             const lang = document.getElementById('sourceLangSelect').value || 'kr';
             const statusTitle = document.getElementById('statusTitle');
             const statusCounter = document.getElementById('statusCounter');
             const progressBar = document.getElementById('progressBarFill');
-            const btnMain = document.getElementById('btnMain');
 
-            let count = 0;
-            for (let i = 0; i < fetchedWebImages.length; i++) {
-                statusTitle.innerText = `⚡ กำลังแปลหน้า ${i + 1} / ${fetchedWebImages.length}...`;
-                statusCounter.innerText = `${count} / ${fetchedWebImages.length} หน้า`;
-                progressBar.style.width = `${Math.round((count / fetchedWebImages.length) * 100)}%`;
+            if (statusTitle) statusTitle.innerText = `⚡ กำลังแปลหน้า ${idx + 1} (เสร็จแล้ว ${completedCount}/${fetchedWebImages.length})...`;
 
-                await translatePage(i, fetchedWebImages[i], tone, lang);
-                count++;
-                statusCounter.innerText = `${count} / ${fetchedWebImages.length} หน้า`;
-                progressBar.style.width = `${Math.round((count / fetchedWebImages.length) * 100)}%`;
-            }
+            await translatePage(idx, fetchedWebImages[idx], tone, lang);
 
-            statusTitle.innerHTML = `✅ แปลครบทั้งหมด <b style="color:#34d399;">${fetchedWebImages.length}</b> หน้าเรียบร้อย!`;
-            progressBar.style.width = '100%';
-            isTranslating = false;
-            btnMain.disabled = false;
-            btnMain.style.opacity = '1';
+            pageStatus[idx] = 'done';
+            completedCount++;
+            activeWorkers--;
+
+            const pct = Math.round((completedCount / fetchedWebImages.length) * 100);
+            if (statusCounter) statusCounter.innerText = `${completedCount} / ${fetchedWebImages.length} หน้า`;
+            if (progressBar) progressBar.style.width = `${pct}%`;
+
+            processNextQueue();
         }
 
         async function translatePage(idx, imgUrl, tone, lang) {
             const imgEl = document.getElementById('mangaImg_' + idx);
             const badgeEl = document.getElementById('badge_' + idx);
-            if (badgeEl) badgeEl.innerText = '⏳ กำลังแปล...';
+            if (badgeEl) badgeEl.innerHTML = `<span style="color:#60a5fa;">⏳ กำลังแปล...</span>`;
 
             try {
                 const res = await fetch('/api/translate-image-url', {
@@ -426,23 +508,28 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         image_url: imgUrl,
-                        page_index: idx,
                         tone: tone,
                         source_lang: lang
                     })
                 });
                 const data = await res.json();
-                if (data.status === 'success' && data.result_b64) {
-                    let finalSrc = data.result_b64;
-                    if (!finalSrc.startsWith('data:')) {
-                        finalSrc = (finalSrc.startsWith('/9j/') ? 'data:image/jpeg;base64,' : 'data:image/png;base64,') + finalSrc;
-                    }
-                    if (imgEl) {
-                        imgEl.src = finalSrc;
-                        imgEl.dataset.translated = finalSrc;
-                    }
-                    if (badgeEl) {
-                        badgeEl.innerHTML = `<span style="color:#34d399; font-weight:700;">✓ แปลไทยแล้ว</span>`;
+                if (data.status === 'success') {
+                    if (data.bubbles_count > 0 && data.result_b64) {
+                        let finalSrc = data.result_b64;
+                        if (!finalSrc.startsWith('data:')) {
+                            finalSrc = (finalSrc.startsWith('/9j/') ? 'data:image/jpeg;base64,' : 'data:image/png;base64,') + finalSrc;
+                        }
+                        if (imgEl) {
+                            imgEl.src = finalSrc;
+                            imgEl.dataset.translated = finalSrc;
+                        }
+                        if (badgeEl) {
+                            badgeEl.innerHTML = `<span style="color:#34d399; font-weight:700;">✓ แปลไทยแล้ว</span>`;
+                        }
+                    } else {
+                        if (badgeEl) {
+                            badgeEl.innerHTML = `<span style="color:#94a3b8; font-size:11px;">✓ ไม่มีบทสนทนา</span>`;
+                        }
                     }
                 } else {
                     if (badgeEl) badgeEl.innerText = 'ต้นฉบับ';

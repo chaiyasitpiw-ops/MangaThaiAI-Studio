@@ -60,6 +60,7 @@ GDI_FONT_NAMES = {
 class ThaiMangaTypesetter:
     def __init__(self, default_font_family: str = "mali", font_path: Optional[str] = None):
         self.default_font_family = default_font_family
+        self._font_cache = {}
         self.font_paths = {
             "mali": str(FONTS_DIR / "Mali-Bold.ttf"),
             "mali_regular": str(FONTS_DIR / "Mali-Regular.ttf"),
@@ -70,24 +71,38 @@ class ThaiMangaTypesetter:
         }
         if font_path and os.path.exists(font_path):
             self.font_paths["custom"] = font_path
+        # Warm up PyThaiNLP tokenizer
+        if HAS_PYTHAINLP:
+            try:
+                word_tokenize("เริ่มระบบ", engine="newmm")
+            except Exception:
+                pass
 
     def get_font(self, font_family: str, size: int) -> ImageFont.FreeTypeFont:
-        """Resolves font by family name and size, with graceful fallbacks and Raqm complex text shaping on Linux."""
+        """Resolves font by family name and size, with caching, graceful fallbacks and Raqm complex text shaping on Linux."""
         target_path = self.font_paths.get(font_family.lower(), self.font_paths["mali"])
         if not os.path.exists(target_path):
             target_path = self.font_paths.get("mali", "C:/Windows/Fonts/tahoma.ttf")
+        cache_key = (target_path, size)
+        if cache_key in self._font_cache:
+            return self._font_cache[cache_key]
+
+        font_obj = None
         try:
             try:
-                return ImageFont.truetype(target_path, size, layout_engine=ImageFont.Layout.RAQM)
+                font_obj = ImageFont.truetype(target_path, size, layout_engine=ImageFont.Layout.RAQM)
             except Exception:
-                return ImageFont.truetype(target_path, size)
+                font_obj = ImageFont.truetype(target_path, size)
         except Exception:
             try:
-                return ImageFont.truetype("C:/Windows/Fonts/tahoma.ttf", size)
+                font_obj = ImageFont.truetype("C:/Windows/Fonts/tahoma.ttf", size)
             except Exception:
-                return ImageFont.load_default()
+                font_obj = ImageFont.load_default()
 
-    def wrap_thai_words(self, text: str, max_width: int, measure_fn) -> List[str]:
+        self._font_cache[cache_key] = font_obj
+        return font_obj
+
+    def wrap_thai_words(self, text: str, max_width: int, measure_fn, pre_words: Optional[List[str]] = None) -> List[str]:
         """Wraps Thai text respecting explicit newlines and Thai grammatical word boundaries."""
         paragraphs = text.split("\n")
         all_lines = []
@@ -97,7 +112,9 @@ class ThaiMangaTypesetter:
             if not para:
                 continue
 
-            if HAS_PYTHAINLP:
+            if pre_words is not None:
+                words = pre_words
+            elif HAS_PYTHAINLP:
                 words = word_tokenize(para, engine="newmm")
             else:
                 words = para.split() if " " in para else list(para)
@@ -316,17 +333,27 @@ class ThaiMangaTypesetter:
         box_w = max(20, xmax - xmin)
         box_h = max(18, ymax - ymin)
 
-        if image.mode != "RGBA":
-            image = image.convert("RGBA")
+        # Pre-tokenize once to avoid re-tokenizing inside the font-fitting loop
+        pre_words = None
+        if HAS_PYTHAINLP:
+            try:
+                pre_words = word_tokenize(text, engine="newmm")
+            except Exception:
+                pass
 
-        overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
-        draw_overlay = ImageDraw.Draw(overlay)
-
-        draw_temp = ImageDraw.Draw(image)
         pad_inner_x = max(4, int(box_w * 0.08))
         pad_inner_y = max(4, int(box_h * 0.08))
         target_w = max(20, box_w - (pad_inner_x * 2))
         target_h = max(16, box_h - (pad_inner_y * 2))
+
+        # Check background brightness behind text bubble
+        crop_bg = np.array(image.crop((xmin, ymin, xmax, ymax)))
+        mean_bright = np.mean(crop_bg) if crop_bg.size > 0 else 255
+
+        # Draw directly on image (eliminates 90% memory churn from full-page alpha compositing)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        draw = ImageDraw.Draw(image)
 
         font_size = min(36, max(12, int(box_h * 0.55)))
         fitted_lines = [text]
@@ -336,7 +363,8 @@ class ThaiMangaTypesetter:
             font = self.get_font(chosen_family, font_size)
             lines = self.wrap_thai_words(
                 text, target_w,
-                lambda s: draw_temp.textbbox((0, 0), s, font=font)[2] - draw_temp.textbbox((0, 0), s, font=font)[0]
+                lambda s: draw.textbbox((0, 0), s, font=font)[2] - draw.textbbox((0, 0), s, font=font)[0],
+                pre_words=pre_words
             )
             line_height = int(font_size * 1.45)
             if len(lines) * line_height <= target_h + 6:
@@ -349,7 +377,8 @@ class ThaiMangaTypesetter:
             best_font = self.get_font(chosen_family, 11)
             fitted_lines = self.wrap_thai_words(
                 text, target_w,
-                lambda s: draw_temp.textbbox((0, 0), s, font=best_font)[2] - draw_temp.textbbox((0, 0), s, font=best_font)[0]
+                lambda s: draw.textbbox((0, 0), s, font=best_font)[2] - draw.textbbox((0, 0), s, font=best_font)[0],
+                pre_words=pre_words
             )
             font_size = 11
 
@@ -357,8 +386,6 @@ class ThaiMangaTypesetter:
         total_block_h = len(fitted_lines) * line_height
         curr_y = ymin + max(2, (box_h - total_block_h) // 2)
 
-        crop_bg = np.array(image.crop((xmin, ymin, xmax, ymax)))
-        mean_bright = np.mean(crop_bg)
         if mean_bright < 165:
             text_fill = (255, 255, 255)
             stroke_fill = (10, 15, 25)
@@ -369,14 +396,13 @@ class ThaiMangaTypesetter:
             stroke_width = 1
 
         for line in fitted_lines:
-            t_bbox = draw_overlay.textbbox((0, 0), line, font=best_font)
+            t_bbox = draw.textbbox((0, 0), line, font=best_font)
             t_w = t_bbox[2] - t_bbox[0]
             curr_x = xmin + max(2, (box_w - t_w) // 2)
-            draw_overlay.text(
+            draw.text(
                 (curr_x, curr_y), line, font=best_font, fill=text_fill,
                 stroke_width=stroke_width, stroke_fill=stroke_fill
             )
             curr_y += line_height
 
-        result = Image.alpha_composite(image, overlay)
-        return result.convert("RGB")
+        return image
